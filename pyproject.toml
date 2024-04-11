@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "pm25"
+version = "0.1.0"
+description = ""
+authors = ["tomoya-n <s266227@wakayama-u.ac.jp>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+nltk = "^3.8.1"
+numpy = "^1.26.4"
+tokenizers = "^0.15.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
