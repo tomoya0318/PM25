@@ -10,7 +10,7 @@ python = "^3.12"
 nltk = "^3.8.1"
 numpy = "^1.26.4"
 tokenizers = "^0.15.2"
-
+pytest = "^8.2.2"
 
 [build-system]
 requires = ["poetry-core"]
