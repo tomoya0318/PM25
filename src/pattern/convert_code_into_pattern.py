@@ -25,7 +25,7 @@ def variable_name_preprocessing(code):
     return converted_code
 
 def tokenize_python_code(code):
-    """与えられたpythonコードをトークン化し，改行文字をのぞいたトークンのリストを返す．
+    """与えられたPythonコードをトークン化し，改行文字や空のトークンを除いたトークンのリストを返す．
 
     Args:
         code (str): トークン化対象のPythonコード文字列．
@@ -36,6 +36,8 @@ def tokenize_python_code(code):
     tokens = []
     readline = BytesIO(code.encode('utf-8')).readline
     for tok in tokenize.tokenize(readline):
-        if tok.type not in [tokenize.ENCODING, tokenize.NL, tokenize.NEWLINE]:
-            tokens.append(tok.string)
+        if tok.type not in [tokenize.ENCODING, tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT]:
+            token_value = tok.string.strip()
+            if token_value:  # 空でないトークンを追加
+                tokens.append(token_value)
     return tokens
