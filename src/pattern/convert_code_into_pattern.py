@@ -36,6 +36,6 @@ def tokenize_python_code(code):
     tokens = []
     readline = BytesIO(code.encode('utf-8')).readline
     for tok in tokenize.tokenize(readline):
-        if tok.type != tokenize.NL and tok.type != tokenize.NEWLINE:
+        if tok.type not in [tokenize.ENCODING, tokenize.NL, tokenize.NEWLINE]:
             tokens.append(tok.string)
     return tokens
