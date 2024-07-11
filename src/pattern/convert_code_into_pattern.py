@@ -1,7 +1,7 @@
 import sys
 import difflib
-
 sys.path.append("./")
+
 from source_preprocessor import variable_name_preprocessing, tokenize_python_code
 
 
