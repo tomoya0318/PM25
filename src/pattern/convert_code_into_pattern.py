@@ -1,7 +1,9 @@
 import sys
 import difflib
+
 sys.path.append("./")
 from source_preprocessor import variable_name_preprocessing, tokenize_python_code
+
 
 def compute_token_diff(condition, consequent):
     """トークン化された2つのPythonコード文字列の差分を計算する．
@@ -19,19 +21,19 @@ def compute_token_diff(condition, consequent):
 
     sm = difflib.SequenceMatcher(None, token_condition, token_consequent)
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        if tag == 'replace':
+        if tag == "replace":
             for token in token_condition[i1:i2]:
                 diff.append(f"-{token}")
             for token in token_consequent[j1:j2]:
                 diff.append(f"+{token}")
-        elif tag == 'delete':
+        elif tag == "delete":
             for token in token_condition[i1:i2]:
                 diff.append(f"-{token}")
-        elif tag == 'insert':
+        elif tag == "insert":
             for token in token_consequent[j1:j2]:
                 diff.append(f"+{token}")
-        elif tag == 'equal':
+        elif tag == "equal":
             for token in token_condition[i1:i2]:
                 diff.append(token)
-    
+
     return diff
