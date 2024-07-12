@@ -34,13 +34,40 @@ def compute_token_diff(condition, consequent):
                 diff.append(f"+{token}")
         elif tag == "equal":
             for token in token_condition[i1:i2]:
-                diff.append(token)
+                diff.append(f"={token}")
 
     return diff
 
-#debag
+
+def merge_consecutive_tokens(diff):
+    """連続するトークンを結合する．
+
+    Args:
+        diff (list): トークンのリスト
+
+    Returns:
+        list: 結合されたトークンのリスト
+    """
+    if not diff:
+        return []
+
+    merged_diff = []
+    current_token = diff[0]
+
+    for token in diff[1:]:
+        if current_token.startswith(('-', '+', '=')) and token.startswith(current_token[0]):
+            current_token += token[1:]
+            continue
+        merged_diff.append(current_token[1:] if current_token.startswith("=") else current_token)
+        current_token = token
+
+    merged_diff.append(current_token)
+    return merged_diff
+
+# debag
 if __name__ == "__main__":
-    print(compute_token_diff(
-        "i=dic['STRING']",
-        "i=dic.get('STRING')"
-    ))
+    condition = "i=dic[STRING]"
+    consequent = "i=dic.get(STRING)"
+    token = compute_token_diff(condition, consequent)
+    print(token)
+    print(merge_consecutive_tokens(token))
