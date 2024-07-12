@@ -1,7 +1,7 @@
-import sys
 import difflib
-sys.path.append("./")
+import sys
 
+sys.path.append("./src/pattern")
 from source_preprocessor import variable_name_preprocessing, tokenize_python_code
 
 
@@ -37,3 +37,10 @@ def compute_token_diff(condition, consequent):
                 diff.append(token)
 
     return diff
+
+#debag
+if __name__ == "__main__":
+    print(compute_token_diff(
+        "i=dic['STRING']",
+        "i=dic.get('STRING')"
+    ))

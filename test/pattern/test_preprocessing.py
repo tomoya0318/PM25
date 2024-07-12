@@ -1,9 +1,8 @@
 import pytest
-import sys
 import os
 import json
-sys.path.append("../../")
-from src.pattern.source_preprocessor import variable_name_preprocessing, tokenize_python_code, extract_diff
+
+from pattern.source_preprocessor import variable_name_preprocessing, tokenize_python_code, extract_diff
 @pytest.fixture
 def some_data():
     #テスト用のコード
