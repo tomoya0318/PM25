@@ -51,7 +51,7 @@ def test_variable_name_preprocessing(some_data):
 #jsonファイルからconditionとconsequentを読み込めるかのテスト
 def test_extract_diff(json_test_data):
     expected_output = [
-        [["${0:STRING}, ${1:STRING}, '_SUPPORTS_SVE'"], ["${0:STRING}, ${1:STRING}, '_SUPPORTS_SVE', 'NOGIL_BUILD'"]],
-        [["sysconfig.get_config_var(\"Py_GIL_DISABLED\"),"], ["NOGIL_BUILD,"]]
+        ["${0:STRING}, ${1:STRING}, '_SUPPORTS_SVE'", "${0:STRING}, ${1:STRING}, '_SUPPORTS_SVE', 'NOGIL_BUILD'"],
+        ["sysconfig.get_config_var(\"Py_GIL_DISABLED\"),", "NOGIL_BUILD,"]
     ]
     assert extract_diff(json_test_data) == expected_output
