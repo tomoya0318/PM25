@@ -7,7 +7,7 @@ from pattern.convert_code_into_pattern import (
     extract_trigger_sequence,
     update_pattern_counter,
     filter_patterns,
-    process_patch_pairs
+    process_patch_pairs,
 )
 
 
@@ -151,31 +151,44 @@ def test_update_pattern_counter(tokens1, tokens2):
 
     assert pattern_counter == expected_patterns
 
+
 def test_filter_patterns():
-    pattern_counter = Counter({
-        ('=i=dic', '-[', '+.get(', '=STRING', '-]', '+)'): 2,
-        ('=x=y', '-+', '+*', '=z'): 1,
-        ('=foo=', '-bar()', '+baz()'): 1,
-        ('=i=dic', '-[', '=VAR', '-]'): 3
-    })
+    pattern_counter = Counter(
+        {
+            ("=i=dic", "-[", "+.get(", "=STRING", "-]", "+)"): 2,
+            ("=x=y", "-+", "+*", "=z"): 1,
+            ("=foo=", "-bar()", "+baz()"): 1,
+            ("=i=dic", "-[", "=VAR", "-]"): 3,
+        }
+    )
 
-    triggerable_initial = Counter({
-        ('=i=dic', '-[', '=STRING', '-]'): 3,
-        ('=x=y', '-+', '=z'): 2,
-        ('=foo=', '-bar()'): 2
-    })
+    triggerable_initial = Counter(
+        {("=i=dic", "-[", "=STRING", "-]"): 3, ("=x=y", "-+", "=z"): 2, ("=foo=", "-bar()"): 2}
+    )
 
-    actually_changed = Counter({
-        ('=i=dic', '-[', '+.get(', '=STRING', '-]', '+)'): 2,
-        ('=x=y', '-+', '+*', '=z'): 1,
-        ('=foo=', '-bar()', '+baz()'): 1,
-        ('=i=dic', '-[', '=VAR', '-]'): 3
-    })
+    actually_changed = Counter(
+        {
+            ("=i=dic", "-[", "+.get(", "=STRING", "-]", "+)"): 2,
+            ("=x=y", "-+", "+*", "=z"): 1,
+            ("=foo=", "-bar()", "+baz()"): 1,
+            ("=i=dic", "-[", "=VAR", "-]"): 3,
+        }
+    )
 
-    expected_filtered_patterns = Counter({
-        ('i=dic', '-[', '+.get(', 'STRING', '-]', '+)'): 2
-    })
+    expected_filtered_patterns = Counter({("i=dic", "-[", "+.get(", "STRING", "-]", "+)"): 2})
 
     filtered_patterns = filter_patterns(pattern_counter, triggerable_initial, actually_changed, threshold=0.1)
 
     assert filtered_patterns == expected_filtered_patterns
+
+
+def test_process_patch_pairs():
+    patch_pairs = [
+        ("i = dic[STRING]", "i = dic.get(STRING)"),
+        ("i = dic[STRING]", "i = dic.get(STRING)"),
+        ("x = y + z", "x = y * z"),
+        ("foo = bar()", "foo = baz()"),
+    ]
+    expected_pattern = Counter({("i=dic", "-[", "+.get(", "STRING", "-]", "+)"): 2})
+    pattern = process_patch_pairs(patch_pairs)
+    assert pattern == expected_pattern
