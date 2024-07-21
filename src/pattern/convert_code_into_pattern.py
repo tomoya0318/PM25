@@ -65,7 +65,7 @@ def merge_consecutive_tokens(diff):
         if current_token.startswith(("-", "+", "=")) and token.startswith(current_token[0]):
             current_token += token[1:]
             continue
-        merged_diff.append(current_token[1:] if current_token.startswith("=") else current_token)
+        merged_diff.append(current_token)
         current_token = token
 
     merged_diff.append(current_token)
@@ -120,8 +120,26 @@ def update_pattern_counter(counter, new_tokens):
     counter.update(new_subsequences)
 
 
+def _remove_equals(token):
+    """トークンの最初の=だけを削除
+
+    Args:
+        token (string): =が含まれているかを確認するトークン
+
+    Returns:
+        string: =を排除したトークン
+    """
+    if token.startswith("="):
+        return token[1:]
+    return token
+
 def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.1):
     """パターンカウンターから指定された条件を満たさないパターンをフィルタリングする
+        条件
+        - 変更を提案しないコードの削除
+        - 意味が重複するパターンの削除
+        - 10%未満の信頼度のパターンを削除
+        - 1度しか出現していないパターンを削除
 
     Args:
         counter (Counter): パターンカウンター
@@ -135,9 +153,16 @@ def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.
     filtered_counter = Counter()
     seen_patterns = set()
 
+    # アイテムを長さの降順にソートして，反復処理
+    # アイテムを長さの降順にソートして，反復処理
     for pattern, count in sorted(counter.items(), key=lambda x: -len(x[0])):
+        # 1度しか出現していないパターンを削除
         if count <= 1:
             continue
+        # 変更を提案しないコード（削除のみまたは削除と変更なしのみ）を削除
+        if all(token.startswith("-") or token.startswith("=") for token in pattern):
+            continue
+
         # トリガーシーケンスを抽出
         trigger_sequence = extract_trigger_sequence(pattern)
         # 信頼度を計算
@@ -146,11 +171,20 @@ def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.
             if triggerable_initial[trigger_sequence] > 0
             else 0
         )
-        # パターンに削除または追加が含まれているか確認
-        if any(token.startswith(("-", "+")) for token in pattern) and confidence >= threshold:
-            # 同じトークンが含まれる大きいパターンを優先
-            if not any(set(pattern).issubset(set(seen)) for seen in seen_patterns):
-                filtered_counter[pattern] = count
-                seen_patterns.add(pattern)
+
+        # 10%未満の信頼度のパターンを削除
+        if confidence < threshold:
+            continue
+
+        # トークンから`=`を削除したパターンを作成
+        pattern_without_equals = tuple(_remove_equals(token) for token in pattern)
+
+        # 同じトークンが含まれる大きいパターンを優先
+        if not any(set(pattern_without_equals).issubset(set(seen)) for seen in seen_patterns):
+            filtered_counter[pattern_without_equals] = count
+            seen_patterns.add(pattern_without_equals)
 
     return filtered_counter
+
+
+
