@@ -41,5 +41,7 @@ if __name__ == "__main__":
     # 抽出された有効な部分列とその頻度を表示
     for subseq, count in filtered_patterns.items():
         print(
-            f"Pattern: {subseq}, Count: {count}, Confidence: {actually_changed[subseq] / triggerable_initial[extract_trigger_sequence(subseq)]:.2f}"
+            f"Pattern: {subseq},"
+            f"Count: {count},"
+            f"Confidence: {actually_changed[subseq] / triggerable_initial[extract_trigger_sequence(subseq)]:.2f}"
         )

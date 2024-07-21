@@ -21,7 +21,7 @@ def compute_token_diff(condition, consequent):
     try:
         token_condition = tokenize_python_code(variable_name_preprocessing(condition))
         token_consequent = tokenize_python_code(variable_name_preprocessing(consequent))
-    except tokenize.TokenError as e:
+    except tokenize.TokenError:
         return []
 
     diff = []
