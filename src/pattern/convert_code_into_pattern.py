@@ -1,11 +1,8 @@
 import difflib
-import sys
 from collections import Counter
 from itertools import combinations
 import tokenize
-
-sys.path.append("./src/pattern")
-from source_preprocessor import variable_name_preprocessing, tokenize_python_code
+from pattern.source_preprocessor import variable_name_preprocessing, tokenize_python_code
 
 
 def compute_token_diff(condition, consequent):

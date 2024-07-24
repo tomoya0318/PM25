@@ -4,6 +4,9 @@ version = "0.1.0"
 description = ""
 authors = ["tomoya-n <s266227@wakayama-u.ac.jp>"]
 readme = "README.md"
+packages = [
+    { include = "pattern", from = "src" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -22,5 +25,4 @@ build-backend = "poetry.core.masonry.api"
 line-length = 119
 
 [tool.pytest.ini_options]
-pythonpath = "src"
 testpaths = "test"

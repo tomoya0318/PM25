@@ -1,7 +1,6 @@
 import os
-from convert_code_into_pattern import process_patch_pairs
-
-from source_preprocessor import extract_diff
+from pattern.convert_code_into_pattern import process_patch_pairs
+from pattern.source_preprocessor import extract_diff
 
 if __name__ == "__main__":
     # JSONファイルのパス

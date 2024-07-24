@@ -10,7 +10,6 @@ from pattern.convert_code_into_pattern import (
     process_patch_pairs,
 )
 
-
 @pytest.fixture
 def diff_data():
     return {"condition": "i = dic[STRING]", "consequent": "i = dic.get(STRING)"}
