@@ -150,8 +150,6 @@ def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.
     """
     filtered_counter = Counter()
     seen_patterns = set()
-
-    # アイテムを長さの降順にソートして，反復処理
     # アイテムを長さの降順にソートして，反復処理
     for pattern, count in sorted(counter.items(), key=lambda x: -len(x[0])):
         # 1度しか出現していないパターンを削除

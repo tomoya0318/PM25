@@ -62,6 +62,9 @@ def extract_diff(file_path):
     for item in data:
         condition = item["condition"]
         consequent = item["consequent"]
-        result.append([condition[0], consequent[0]])
-
+        try:
+            result.append([condition[0], consequent[0]])
+        except IndexError as e:
+            print(f"Index Error: {e}")
+            continue
     return result
