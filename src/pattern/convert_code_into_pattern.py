@@ -2,6 +2,7 @@ import difflib
 from collections import Counter
 from itertools import combinations
 import tokenize
+from tqdm import tqdm
 from pattern.source_preprocessor import variable_name_preprocessing, tokenize_python_code
 
 
@@ -196,7 +197,8 @@ def process_patch_pairs(patch_pairs):
     triggerable_initial = Counter()
     actually_changed = Counter()
 
-    for condition, consequent in patch_pairs:
+    print("process patch pairs start...")
+    for condition, consequent in tqdm(patch_pairs):
         diff_tokens = compute_token_diff(condition, consequent)
         if not diff_tokens:
             continue
@@ -210,7 +212,6 @@ def process_patch_pairs(patch_pairs):
             actually_changed[pattern] += new_patterns[pattern]
 
     return filter_patterns(pattern_counter, triggerable_initial, actually_changed)
-    # return pattern_counter, triggerable_initial, actually_changed
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ import re
 import tokenize
 import json
 from io import BytesIO
+from tqdm import tqdm
+import os
 
 
 def variable_name_preprocessing(code):
@@ -59,12 +61,30 @@ def extract_diff(file_path):
         data = json.load(file)
 
     result = []
-    for item in data:
+    print("extract diff start...")
+    for item in tqdm(data):
         condition = item["condition"]
         consequent = item["consequent"]
         try:
             result.append([condition[0], consequent[0]])
-        except IndexError as e:
-            print(f"Index Error: {e}")
+        except IndexError:
             continue
     return result
+
+
+def save_patterns_to_json(filtered_patterns, filepath):
+    """フィルタリングされたパターンをJSONファイルに保存する
+
+    Args:
+        filtered_patterns (dict): パターンとその出現回数の辞書
+        filepath (str): 保存するJSONファイルのパス
+    """
+    # JSONシリアライズに適した辞書に変換
+    patterns_dict = {str(subseq): count for subseq, count in filtered_patterns.items()}
+    
+    # 出力ディレクトリが存在しない場合は作成
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    
+    # 辞書をJSONファイルに保存
+    with open(filepath, 'w') as f:
+        json.dump(patterns_dict, f, indent=4)
