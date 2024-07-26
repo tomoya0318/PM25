@@ -132,6 +132,23 @@ def _remove_equals(token):
     return token
 
 
+def _contains_plus_and_minus(pattern):
+    """パターンに`-`と`+`が同時に存在するかを確認する
+
+    パターン内に変更を示す`-`（削除）と`+`（追加）が
+    両方存在するかどうかをチェックする。
+
+    Args:
+        pattern (list): パターンのリスト
+
+    Returns:
+        bool: `-`と`+`が両方存在する場合はTrue、そうでない場合はFalse
+    """
+    contains_minus = any(token.startswith("-") for token in pattern)
+    contains_plus = any(token.startswith("+") for token in pattern)
+    return contains_minus and contains_plus
+
+
 def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.1):
     """パターンカウンターから指定された条件を満たさないパターンをフィルタリングする
         条件
@@ -156,8 +173,9 @@ def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.
         # 1度しか出現していないパターンを削除
         if count <= 1:
             continue
-        # 変更を提案しないコード（削除のみまたは削除と変更なしのみ）を削除
-        if all(token.startswith("-") or token.startswith("=") for token in pattern):
+
+        # 変更を提案しないコード（`-`と`+`が同時に存在しないパターン）を削除
+        if not _contains_plus_and_minus(pattern):
             continue
 
         # トリガーシーケンスを抽出
@@ -215,10 +233,15 @@ def process_patch_pairs(patch_pairs):
 
 
 if __name__ == "__main__":
-    patch_pairs = [
-        ("i = dic[STRING]", "i = dic.get(STRING)"),
-        ("i = dic[STRING]", "i = dic.get(STRING)"),
-        ("x = y + z", "x = y * z"),
-        ("foo = bar()", "foo = baz()"),
-    ]
-    print(process_patch_pairs(patch_pairs))
+    condition = "STRING = STRING + STRING"
+    consequent = "STRING += STRING"
+    diff = compute_token_diff(condition, consequent)
+    merge_diff = merge_consecutive_tokens(diff)
+    print(extract_valid_subsequences(merge_diff))
+    # patch_pairs = [
+    #     ("i = dic[STRING]", "i = dic.get(STRING)"),
+    #     ("i = dic[STRING]", "i = dic.get(STRING)"),
+    #     ("x = y + z", "x = y * z"),
+    #     ("foo = bar()", "foo = baz()"),
+    # ]
+    # print(process_patch_pairs(patch_pairs))
