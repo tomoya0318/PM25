@@ -81,10 +81,10 @@ def save_patterns_to_json(filtered_patterns, filepath):
     """
     # JSONシリアライズに適した辞書に変換
     patterns_dict = {str(subseq): count for subseq, count in filtered_patterns.items()}
-    
+
     # 出力ディレクトリが存在しない場合は作成
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    
+
     # 辞書をJSONファイルに保存
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         json.dump(patterns_dict, f, indent=4)
