@@ -1,0 +1,30 @@
+import os
+
+def get_filename(file_path):
+    """
+    指定されたファイル名から拡張子を除いた部分を取得
+
+    Args:
+        filename (str): ファイル名
+
+    Returns:
+        str: 拡張子を除いたファイル名
+    """
+    filename_with_extension = os.path.basename(file_path)
+    filename_without_extension = os.path.splitext(filename_with_extension)[0]
+    return filename_without_extension
+
+
+def ensure_dir_exists(file_path):
+    """
+    指定されたファイルパスのディレクトリが存在するか確認し、存在しない場合は作成
+
+    Args:
+        filepath (str): 確認および作成するディレクトリを含むファイルパス
+    """
+    dir = os.path.dirname(file_path)
+    if not os.path.exists(dir):
+        os.makedirs(dir, exist_ok=True)
+        print(f"Directory created: {dir}")
+    else:
+        print(f"Directory already exists: {dir}")
