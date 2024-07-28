@@ -8,3 +8,4 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 DATA = f"{ROOT}/data"
 RESOURCE = f"{DATA}/resources"
 OUT = f"{DATA}/out"
+TMP = f"{ROOT}/tmp"
