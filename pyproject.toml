@@ -5,7 +5,8 @@ description = ""
 authors = ["tomoya-n <s266227@wakayama-u.ac.jp>"]
 readme = "README.md"
 packages = [
-    { include = "pattern", from = "src" }
+    { include = "pattern", from = "src" },
+    { include = "developer", from = "src" }
 ]
 
 [tool.poetry.dependencies]
