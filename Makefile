@@ -7,7 +7,7 @@ lint:
 	poetry run flake8 src/
 
 test:
-	poetry run pytest -vv test/pattern
+	poetry run pytest -vv
 
 test_pt:
-	poetry run pytest -s test/pattern
+	poetry run pytest -s
