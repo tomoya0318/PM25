@@ -3,7 +3,7 @@ import tokenize
 import json
 from io import BytesIO
 from tqdm import tqdm
-import os
+from utils.file_processor import ensure_dir_exists
 
 
 def variable_name_preprocessing(code):
@@ -83,7 +83,7 @@ def save_patterns_to_json(filtered_patterns, filepath):
     patterns_dict = {str(subseq): count for subseq, count in filtered_patterns.items()}
 
     # 出力ディレクトリが存在しない場合は作成
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    ensure_dir_exists(filepath)
 
     # 辞書をJSONファイルに保存
     with open(filepath, "w") as f:
