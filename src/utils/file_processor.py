@@ -1,5 +1,6 @@
 import os
 
+
 def get_filename(file_path):
     """
     指定されたファイル名から拡張子を除いた部分を取得

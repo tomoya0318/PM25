@@ -1,5 +1,6 @@
 """使用するPATHの一覧
 """
+
 import os
 
 
