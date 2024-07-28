@@ -27,22 +27,14 @@ def extract_author(file_path):
     return result
 
 
-def save_author_to_json(authors, file_name):
+def save_author_to_json(authors, save_path):
     """開発者の情報をJSONファイルに保存
 
     Args:
         authors (set): 保存する開発者の情報を含む集合
         file_name (str): 保存するファイルの名前
     """
-    save_path = f"{path.OUT}/dev/{file_name}.json"
     ensure_dir_exists(save_path)
     authors_list = list(authors)  # setをリストに変換
     with open(save_path, "w") as f:
         json.dump(authors_list, f, indent=4, ensure_ascii=False)
-
-
-if __name__ == "__main__":
-    file_path = f"{path.RESOURCE}/numpy_numpy_Python_master.json"
-    file_name = get_filename(file_path)
-    authors = extract_author(file_path)
-    save_author_to_json(authors, file_name)
