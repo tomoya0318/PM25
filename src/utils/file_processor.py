@@ -1,5 +1,5 @@
 import os
-
+import shutil
 
 def get_filename(file_path):
     """
@@ -45,3 +45,14 @@ def decode_unicode_escapes(s):
     decoded_bytes = bytes(s, "utf-8").decode("unicode_escape")
     # 次にUTF-8として解釈しなおす
     return decoded_bytes.encode("latin1").decode("utf-8")
+
+
+def remove_dir(dir_path):
+    """指定したディレクトリを削除
+
+    Args:
+        dir_path (str): 削除したいディレクトリへのパス
+    """
+    if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
+    
