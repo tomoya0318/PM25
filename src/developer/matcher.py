@@ -13,5 +13,5 @@ def calc_match_rate(dev1, dev2):
 
     if len(union) == 0:
         return 0.0
-    
+
     return len(intersection) / len(union)

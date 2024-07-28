@@ -1,6 +1,7 @@
 import os
 import shutil
 
+
 def get_filename(file_path):
     """
     指定されたファイル名から拡張子を除いた部分を取得
@@ -55,4 +56,3 @@ def remove_dir(dir_path):
     """
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
-    
