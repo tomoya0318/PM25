@@ -1,7 +1,5 @@
 import pytest
 import json
-import os
-import shutil
 from constants import path
 from utils.file_processor import ensure_dir_exists, remove_dir
 from developer.preprocessor import (
