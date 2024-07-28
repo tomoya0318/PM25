@@ -28,3 +28,19 @@ def ensure_dir_exists(file_path):
         print(f"Directory created: {dir}")
     else:
         print(f"Directory already exists: {dir}")
+
+
+def decode_unicode_escapes(s):
+    """
+    エスケープされたユニコード文字列をデコードする。
+
+    Args:
+        s (str): エスケープされたユニコード文字列
+
+    Returns:
+        str: デコードされた文字列
+    """
+    # まず最初にエスケープシーケンスをデコード
+    decoded_bytes = bytes(s, "utf-8").decode("unicode_escape")
+    # 次にUTF-8として解釈しなおす
+    return decoded_bytes.encode("latin1").decode("utf-8")
