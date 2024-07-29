@@ -1,5 +1,5 @@
 import os
-from pattern.convert_code_into_pattern import process_patch_pairs
+from pattern.converter import process_patch_pairs
 from pattern.source_preprocessor import extract_diff, save_patterns_to_json
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import pytest
 from collections import Counter
-from pattern.convert_code_into_pattern import (
+from pattern.converter import (
     compute_token_diff,
     merge_consecutive_tokens,
     extract_valid_subsequences,

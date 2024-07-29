@@ -2,7 +2,7 @@ import pytest
 import json
 from constants import path
 from utils.file_processor import ensure_dir_exists, remove_dir
-from developer.preprocessor import extract_author, save_author_to_json
+from developer.author_preprocessor import extract_author, save_author_to_json
 
 
 def test_extract_author(tmp_json_file, developers_set_1):
