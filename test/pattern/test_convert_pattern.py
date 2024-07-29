@@ -175,7 +175,7 @@ def test_filter_patterns():
         }
     )
 
-    expected_filtered_patterns = Counter({("i=dic", "-[", "+.get(", "STRING", "-]", "+)"): 2})
+    expected_filtered_patterns = Counter({("=i=dic", "-[", "+.get(", "=STRING", "-]", "+)"): 2})
 
     filtered_patterns = filter_patterns(pattern_counter, triggerable_initial, actually_changed, threshold=0.1)
 
@@ -189,6 +189,6 @@ def test_process_patch_pairs():
         ("x = y + z", "x = y * z"),
         ("foo = bar()", "foo = baz()"),
     ]
-    expected_pattern = Counter({("i=dic", "-[", "+.get(", "STRING", "-]", "+)"): 2})
+    expected_pattern = Counter({("=i=dic", "-[", "+.get(", "=STRING", "-]", "+)"): 2})
     pattern = process_patch_pairs(patch_pairs)
     assert pattern == expected_pattern
