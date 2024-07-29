@@ -1,6 +1,6 @@
 import os
 import shutil
-
+import json
 
 def get_filename(file_path):
     """
@@ -56,3 +56,14 @@ def remove_dir(dir_path):
     """
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
+
+def load_from_json(file_path):
+    """JSONファイルからデータを取得
+
+    Args:
+        file_path (str): JSONファイルへのパス
+    """
+    with open(file_path, "r") as f:
+        data = json.load(f)
+    
+    return data

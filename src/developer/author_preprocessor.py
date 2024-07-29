@@ -1,6 +1,6 @@
 import json
 from tqdm import tqdm
-from utils.file_processor import ensure_dir_exists, decode_unicode_escapes
+from utils.file_processor import ensure_dir_exists, decode_unicode_escapes, load_from_json
 
 
 def extract_author(file_path):
@@ -48,7 +48,5 @@ def json_to_set(save_path):
     Returns:
     set: JSONファイル内のデータをセットに変換したもの
     """
-    with open(save_path, "r") as f:
-        authors = set(json.load(f))
-
+    authors = set(load_from_json(save_path))
     return authors
