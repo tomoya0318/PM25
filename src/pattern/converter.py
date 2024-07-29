@@ -191,13 +191,10 @@ def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.
         if confidence < threshold:
             continue
 
-        # トークンから`=`を削除したパターンを作成
-        pattern_without_equals = tuple(_remove_equals(token) for token in pattern)
-
         # 同じトークンが含まれる大きいパターンを優先
-        if not any(set(pattern_without_equals).issubset(set(seen)) for seen in seen_patterns):
-            filtered_counter[pattern_without_equals] = count
-            seen_patterns.add(pattern_without_equals)
+        if not any(set(pattern).issubset(set(seen)) for seen in seen_patterns):
+            filtered_counter[pattern] = count
+            seen_patterns.add(pattern)
 
     return filtered_counter
 
