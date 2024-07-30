@@ -67,3 +67,15 @@ def load_from_json(file_path):
         data = json.load(f)
     
     return data
+
+def dump_to_json(data, file_path):
+    """
+    データをJSONファイルへ保存する関数。
+
+    Args:
+        data (any): 保存するデータ
+        file_path (str): JSONファイルへのパス
+    """
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+    
