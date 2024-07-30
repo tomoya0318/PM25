@@ -1,13 +1,14 @@
 import os
+from constants import path
 from pattern.converter import process_patch_pairs
 from pattern.source_preprocessor import extract_diff, save_patterns_to_json
 
 if __name__ == "__main__":
     # JSONファイルのパス
-    json_file_path = os.path.join(os.path.dirname(__file__), "../../data/sample_data.json")
-    # json_file_path = os.path.join(os.path.dirname(__file__), "../../data/numpy_numpy_Python_master.json")
-    output_path = os.path.join(os.path.dirname(__file__), "../../data/out/sample_patterns.json")
-    # output_path = os.path.join(os.path.dirname(__file__), "../../data/out/numpy_numpy_patterns.json")
+    json_file_path = f"{path.RESOURCE}/sample_data.json"
+    # json_file_path = f"{path.RESOURCE}/numpy_numpy_Python_master.json"
+    output_path = f"{path.INTERMEDIATE}/pattern/sample_patterns.json"
+    # output_path = f"{path.INTERMEDIATE}/pattern/numpy_numpy_Python_master.json"
 
     # JSONファイルから初期パッチと統合パッチを抽出
     patch_pairs = extract_diff(json_file_path)
