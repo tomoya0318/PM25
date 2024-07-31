@@ -1,4 +1,4 @@
-def calc_match_rate(dev1, dev2):
+def calc_dev_match_rate(dev1, dev2):
     """2つのプロジェクトの開発者の一致率を計算
 
     Args:
