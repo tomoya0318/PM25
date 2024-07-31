@@ -1,5 +1,6 @@
 import ast
 
+
 def are_ast_equal(code1, code2):
     """
     2つのコード文字列が構文的に等しいかどうかを判定
@@ -15,7 +16,7 @@ def are_ast_equal(code1, code2):
         # コード文字列をASTにパース
         tree1 = ast.parse(code1)
         tree2 = ast.parse(code2)
-        
+
         # ASTを比較
         return ast.dump(tree1) == ast.dump(tree2)
     except SyntaxError:

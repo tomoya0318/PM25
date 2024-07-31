@@ -1,7 +1,8 @@
 from constants import path
-from utils.file_processor import load_from_json, dump_to_json, get_filename
+from utils.file_processor import load_from_json, dump_to_json, get_filename, list_files_in_directory
 
-def split_data(file_path):
+
+def split_data(file_path, dir_name):
     """学習用とテスト用にデータを分割（8:2）
 
     Args:
@@ -14,8 +15,9 @@ def split_data(file_path):
     split_index = int(len(data) * 0.2)
     test_data = data[:split_index]
     train_data = data[split_index:]
-    dump_to_json(train_data, f"{path.INTERMEDIATE}/train_data/{file_name}.json")
-    dump_to_json(test_data, f"{path.INTERMEDIATE}/test_data/{file_name}.json")
+    dump_to_json(train_data, f"{path.INTERMEDIATE}/train_data/{dir_name}/{file_name}.json")
+    dump_to_json(test_data, f"{path.INTERMEDIATE}/test_data/{dir_name}/{file_name}.json")
+
 
 def _extract_required_data(data):
     """
@@ -32,11 +34,15 @@ def _extract_required_data(data):
         extracted_item = {
             "author": item.get("author", ""),
             "condition": item.get("condition", []),
-            "consequent": item.get("consequent", [])
+            "consequent": item.get("consequent", []),
         }
         extracted_data.append(extracted_item)
     return extracted_data
 
+
 if __name__ == "__main__":
-    file_path = f"{path.RESOURCE}/sample_data.json"
-    split_data(file_path)
+    dir_path = f"{path.RESOURCE}/numpy"
+    projects = list_files_in_directory(dir_path)
+    for project in projects:
+        file_path = f"{dir_path}/{project}"
+        split_data(file_path, "numpy")
