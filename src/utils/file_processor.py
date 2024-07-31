@@ -2,6 +2,7 @@ import os
 import shutil
 import json
 
+
 def get_filename(file_path):
     """
     指定されたファイル名から拡張子を除いた部分を取得
@@ -57,6 +58,7 @@ def remove_dir(dir_path):
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
 
+
 def load_from_json(file_path):
     """JSONファイルからデータを取得
 
@@ -65,8 +67,9 @@ def load_from_json(file_path):
     """
     with open(file_path, "r") as f:
         data = json.load(f)
-    
+
     return data
+
 
 def dump_to_json(data, file_path):
     """
@@ -76,6 +79,36 @@ def dump_to_json(data, file_path):
         data (any): 保存するデータ
         file_path (str): JSONファイルへのパス
     """
+    ensure_dir_exists(file_path)
     with open(file_path, "w") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
-    
+
+
+def format_pattern(pattern):
+    """
+    パターン文字列をフォーマットしてリストに変換する関数
+
+    Args:
+        pattern (str): フォーマットするパターン文字列．例: "(a, b, c)"
+
+    Returns:
+        list: フォーマットされたパターンのリスト．例: ['a', 'b', 'c']
+    """
+    return pattern.strip("()").split(", ")
+
+
+def list_files_in_directory(directory):
+    """指定されたディレクトリ内のすべてのファイル名を取得する関数
+
+    Args:
+        directory (str): 対象のディレクトリのパス
+
+    Returns:
+        list: ファイル名のリスト
+    """
+    try:
+        file_names = os.listdir(directory)
+        return file_names
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+        return []

@@ -1,4 +1,7 @@
 from utils.ast_checker import are_ast_equal
+from utils.file_processor import format_pattern
+
+
 def collect_triggerable_patches(pattern):
     """トリガーシーケンスを特定
 
@@ -9,25 +12,13 @@ def collect_triggerable_patches(pattern):
         str: トリガーシーケンス
     """
     trigger = ""
-    pattern = _format_pattern(pattern)
+    pattern = format_pattern(pattern)
     for token in pattern:
         token = token.strip("'")
-        if token.startswith('-') or token.startswith('='):
+        if token.startswith("-") or token.startswith("="):
             trigger += token[1:]
     return trigger
 
-
-def _format_pattern(pattern):
-    """
-    パターン文字列をフォーマットしてリストに変換する関数
-
-    Args:
-        pattern (str): フォーマットするパターン文字列．例: "(a, b, c)"
-
-    Returns:
-        list: フォーマットされたパターンのリスト．例: ['a', 'b', 'c']
-    """
-    return pattern.strip("()").split(", ")
 
 def apply_change(pattern):
     """
@@ -40,13 +31,13 @@ def apply_change(pattern):
         str: 適用後のコード．例: "token1token2"
     """
     destination = ""
-    pattern = _format_pattern(pattern)
+    pattern = format_pattern(pattern)
     for token in pattern:
         token = token.strip("'")
-        if token.startswith('+') or token.startswith('='):
+        if token.startswith("+") or token.startswith("="):
             destination += token[1:]
     return destination
-        
+
 
 def apply_pattern_changes(patterns, conditon):
     """パターンの変更を適用する関数
@@ -63,10 +54,11 @@ def apply_pattern_changes(patterns, conditon):
         trigger = collect_triggerable_patches(pattern)
         if not are_ast_equal(trigger, conditon):
             continue
-        consequent = apply_change(pattern)
-        return consequent
-    
+        pre_consequent = apply_change(pattern)
+        return pre_consequent
+
     return None
+
 
 if __name__ == "__main__":
     pattern = {
