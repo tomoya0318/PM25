@@ -1,4 +1,3 @@
-from sklearn.model_selection import train_test_split
 from constants import path
 from utils.file_processor import load_from_json, dump_to_json, get_filename
 
@@ -11,8 +10,10 @@ def split_data(file_path):
     file_name = get_filename(file_path)
     data = load_from_json(file_path)
     data = _extract_required_data(data)
-    # データを学習用データとテスト用データに分割
-    train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+    # データを前半2割をテストデータとして、後半8割を学習データとして分割
+    split_index = int(len(data) * 0.2)
+    test_data = data[:split_index]
+    train_data = data[split_index:]
     dump_to_json(train_data, f"{path.INTERMEDIATE}/train_data/{file_name}.json")
     dump_to_json(test_data, f"{path.INTERMEDIATE}/test_data/{file_name}.json")
 
