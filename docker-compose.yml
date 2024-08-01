@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  app:
+    build:
+      context: .
+    container_name: pm25
+    tty: true
+    volumes:
+      - type: bind
+        source: .
+        target: /work
+      - type: volume
+        source: packages
+        target: /usr/local/lib/python3.12/site-packages
+
+volumes:
+  packages:
