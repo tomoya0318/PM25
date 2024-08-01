@@ -61,8 +61,7 @@ def extract_diff(file_path):
         data = json.load(file)
 
     result = []
-    print("extract diff start...")
-    for item in tqdm(data):
+    for item in tqdm(data, leave=False):
         condition = item["condition"]
         consequent = item["consequent"]
         try:
