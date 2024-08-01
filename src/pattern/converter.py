@@ -59,7 +59,7 @@ def merge_consecutive_tokens(diff):
     merged_diff = []
     current_token = diff[0]
 
-    for token in diff[1:]:
+    for token in tqdm(diff[1:], desc="merging token", leave=False):
         if current_token.startswith(("-", "+", "=")) and token.startswith(current_token[0]):
             current_token += token[1:]
             continue
@@ -82,8 +82,8 @@ def extract_valid_subsequences(tokens):
     subsequences = []
     start_token = tokens[0]
     n = len(tokens)
-    for length in range(2, n + 1):  # 部分列の長さを2からnまで変更
-        for comb in combinations(range(1, n), length - 1):  # 各長さで部分列を生成（start_tokenを固定）
+    for length in tqdm(range(2, n + 1), desc="extract_subsequences", leave=False):  # 部分列の長さを2からnまで変更
+        for comb in tqdm(combinations(range(1, n), length - 1), desc="combination...", leave=False):  # 各長さで部分列を生成（start_tokenを固定）
             subseq = (start_token,) + tuple(tokens[i] for i in comb)
             if any(token.startswith(("-", "+")) for token in subseq):
                 subsequences.append(subseq)
@@ -169,7 +169,7 @@ def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.
     filtered_counter = Counter()
     seen_patterns = set()
     # アイテムを長さの降順にソートして，反復処理
-    for pattern, count in sorted(counter.items(), key=lambda x: -len(x[0])):
+    for pattern, count in tqdm(sorted(counter.items(), key=lambda x: -len(x[0])), desc="fillting...", leave=False):
         # 1度しか出現していないパターンを削除
         if count <= 1:
             continue
@@ -212,8 +212,7 @@ def process_patch_pairs(patch_pairs):
     triggerable_initial = Counter()
     actually_changed = Counter()
 
-    print("process patch pairs start...")
-    for condition, consequent in tqdm(patch_pairs):
+    for condition, consequent in tqdm(patch_pairs, desc="process patch", leave=False):
         diff_tokens = compute_token_diff(condition, consequent)
         if not diff_tokens:
             continue
@@ -221,7 +220,7 @@ def process_patch_pairs(patch_pairs):
         new_patterns = extract_valid_subsequences(merged_diff_tokens)
         update_pattern_counter(pattern_counter, merged_diff_tokens)
 
-        for pattern in new_patterns:
+        for pattern in tqdm(new_patterns, desc="getting trigger and actually", leave=False):
             trigger_sequence = extract_trigger_sequence(pattern)
             triggerable_initial[trigger_sequence] += new_patterns[pattern]
             actually_changed[pattern] += new_patterns[pattern]
