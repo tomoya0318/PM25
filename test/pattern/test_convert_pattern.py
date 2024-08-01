@@ -1,4 +1,3 @@
-import pytest
 from collections import Counter
 from pattern.converter import (
     compute_token_diff,
@@ -9,21 +8,6 @@ from pattern.converter import (
     filter_patterns,
     process_patch_pairs,
 )
-
-
-@pytest.fixture
-def diff_data():
-    return {"condition": "i = dic[STRING]", "consequent": "i = dic.get(STRING)"}
-
-
-@pytest.fixture
-def tokens1():
-    return ["=i=dic", "-[", "+.get(", "=STRING", "-]", "+)"]
-
-
-@pytest.fixture
-def tokens2():
-    return ["=i=dic", "-[", "+.get(", "=STRING", "-]", "+)", "+get(STRING)"]
 
 
 def test_sequence_token_diff(diff_data):
