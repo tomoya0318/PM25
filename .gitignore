@@ -5,3 +5,4 @@ packages
 .venv
 .pytest_cache
 .env
+tmp
