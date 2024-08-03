@@ -1,28 +1,28 @@
 import json
 from tqdm import tqdm
-from utils.file_processor import ensure_dir_exists, decode_unicode_escapes, load_from_json
+from constants import path
+from utils.file_processor import ensure_dir_exists, decode_unicode_escapes, dump_to_json, list_files_in_directory
 
 
 def extract_author(file_path):
-    """JSONファイルから，パッチ作成者を取得する
+    """JSONファイルから，パッチ作成者とそのコミット回数を取得する
 
     Args:
         file_path (str): データを含むJSONファイルへのパス
 
     Returns:
-        set: パッチ作成者（被りなし）
+        dict: パッチ作成者とそのコミット回数
     """
     with open(file_path, "r") as file:
         data = json.load(file)
 
-    result = set()
-    print("extract developer start...")
+    result = {}
     for item in tqdm(data):
         author = decode_unicode_escapes(item["author"])
-        try:
-            result.add(author)
-        except IndexError:
-            continue
+        if author in result:
+            result[author] += 1
+        else:
+            result[author] = 1
     return result
 
 
@@ -30,23 +30,20 @@ def save_author_to_json(authors, save_path):
     """開発者の情報をJSONファイルに保存
 
     Args:
-        authors (set): 保存する開発者の情報を含む集合
-        file_name (str): 保存するファイルの名前
+        authors (dict): 保存する開発者の情報を含む辞書
+        save_path (str): 保存するファイルのパス
     """
     ensure_dir_exists(save_path)
-    authors_list = list(authors)  # setをリストに変換
-    with open(save_path, "w") as f:
-        json.dump(authors_list, f, indent=4, ensure_ascii=False)
+    dump_to_json(authors, save_path)
 
 
-def json_to_set(save_path):
-    """jsonで保存されているデータを集合に変換
-
-    Args:
-        save_path (str): 保存されているデータへのパス
-
-    Returns:
-    set: JSONファイル内のデータをセットに変換したもの
-    """
-    authors = set(load_from_json(save_path))
-    return authors
+if __name__ == "__main__":
+    owner = "numpy"
+    dir_path = f"{path.INTERMEDIATE}/train_data/{owner}"
+    projects = list_files_in_directory(dir_path)
+    for project in projects:
+        print(project)
+        file_path = f"{dir_path}/{project}"
+        output_path = f"{path.INTERMEDIATE}/dev/{owner}/{project}"
+        authors = extract_author(file_path)
+        save_author_to_json(authors, output_path)
