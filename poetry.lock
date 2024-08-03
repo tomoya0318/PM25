@@ -532,6 +532,47 @@ dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
+name = "polars"
+version = "1.4.0"
+description = "Blazingly fast DataFrame library"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "polars-1.4.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:64e88f526dbe560cc2912285cd22a423763ddeeda6b2932958da805dca63c33d"},
+    {file = "polars-1.4.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:5c2a1937acbd4dad29b475a31082942f58125666d76a6d7d0e646c0c6f7aa86a"},
+    {file = "polars-1.4.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:07b3acd025c6089780f2b8c18b5d15302d16be9c114ae70ff2ff053f1b38eb24"},
+    {file = "polars-1.4.0-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:21393ac0d2b25acf0f3fb30018f27eff8e2f1d33e152b53677f8bcbc4fd05275"},
+    {file = "polars-1.4.0-cp38-abi3-win_amd64.whl", hash = "sha256:12605c537690c570f6a971207c48a65140071fbf2000f733aa1e313e13e1f62c"},
+    {file = "polars-1.4.0.tar.gz", hash = "sha256:6719c2a93c787849ad2855b5cb477410fd66b73f2cb5f082f7f7980835c549a1"},
+]
+
+[package.extras]
+adbc = ["adbc-driver-manager[dbapi]", "adbc-driver-sqlite[dbapi]"]
+all = ["polars[async,cloudpickle,database,deltalake,excel,fsspec,graph,iceberg,numpy,pandas,plot,pyarrow,pydantic,style,timezone]"]
+async = ["gevent"]
+calamine = ["fastexcel (>=0.9)"]
+cloudpickle = ["cloudpickle"]
+connectorx = ["connectorx (>=0.3.2)"]
+database = ["nest-asyncio", "polars[adbc,connectorx,sqlalchemy]"]
+deltalake = ["deltalake (>=0.15.0)"]
+excel = ["polars[calamine,openpyxl,xlsx2csv,xlsxwriter]"]
+fsspec = ["fsspec"]
+gpu = ["cudf-polars-cu12"]
+graph = ["matplotlib"]
+iceberg = ["pyiceberg (>=0.5.0)"]
+numpy = ["numpy (>=1.16.0)"]
+openpyxl = ["openpyxl (>=3.0.0)"]
+pandas = ["pandas", "polars[pyarrow]"]
+plot = ["hvplot (>=0.9.1)", "polars[pandas]"]
+pyarrow = ["pyarrow (>=7.0.0)"]
+pydantic = ["pydantic"]
+sqlalchemy = ["polars[pandas]", "sqlalchemy"]
+style = ["great-tables (>=0.8.0)"]
+timezone = ["backports-zoneinfo", "tzdata"]
+xlsx2csv = ["xlsx2csv (>=0.8.0)"]
+xlsxwriter = ["xlsxwriter"]
+
+[[package]]
 name = "pycodestyle"
 version = "2.12.0"
 description = "Python style guide checker"
@@ -1094,4 +1135,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "ce630dee37f141835dcbe6f072550d362694867d2c5d739f43b58cfd82505c68"
+content-hash = "0646549c7dfae6a339a13b841fb680a2b7a356c7958d4f30adb7b0bbb23f4d60"

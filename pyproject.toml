@@ -20,6 +20,7 @@ flake8 = "^7.1.0"
 tqdm = "^4.66.4"
 sklearn-model = "^0.0.6"
 python-dotenv = "^1.0.1"
+polars = "^1.4.0"
 
 [build-system]
 requires = ["poetry-core"]
