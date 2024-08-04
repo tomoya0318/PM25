@@ -112,3 +112,28 @@ def list_files_in_directory(directory):
     except Exception as e:
         print(f"エラーが発生しました: {e}")
         return []
+
+
+def extract_project_name(project_filename):
+    """プロジェクトのファイル名からプロジェクト名を抽出する
+
+    Args:
+        project_filename (str): プロジェクトのファイル名
+
+    Returns:
+        str: 抽出されたプロジェクト名
+    """
+    return project_filename.split("_")[1]
+
+
+def count_elements_in_json(file_path):
+    """JSONファイルに含まれている要素の数を数える
+
+    Args:
+        file_path (str): JSONファイルのパス
+
+    Returns:
+        int: JSONファイルに含まれている要素の数
+    """
+    data = load_from_json(file_path)
+    return len(data)
