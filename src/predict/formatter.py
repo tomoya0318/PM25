@@ -41,8 +41,9 @@ def _extract_required_data(data):
 
 
 if __name__ == "__main__":
-    dir_path = f"{path.RESOURCE}/numpy"
+    owner = "numpy"
+    dir_path = f"{path.RESOURCE}/{owner}"
     projects = list_files_in_directory(dir_path)
     for project in projects:
         file_path = f"{dir_path}/{project}"
-        split_data(file_path, "numpy")
+        split_data(file_path, owner)
