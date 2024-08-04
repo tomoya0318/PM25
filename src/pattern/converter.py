@@ -7,6 +7,7 @@ from pattern.source_preprocessor import variable_name_preprocessing, tokenize_py
 from utils.file_processor import dump_to_json, load_from_json
 from constants import path
 
+
 def compute_token_diff(condition, consequent):
     """トークン化された2つのPythonコード文字列の差分を計算する．
 
@@ -80,6 +81,7 @@ def extract_valid_subsequences(tokens):
     Returns:
         Counter: 有効な部分列とその頻度を含むカウンターオブジェクト
     """
+
     def subsequence_generator(tokens):
         start_token = tokens[0]
         n = len(tokens)
@@ -221,10 +223,11 @@ def save_to_tempfile(data):
     dump_to_json(data, tmp_file_path)
     return tmp_file_path
 
+
 def load_from_tmpfile(file_path, batch_size):
     data = load_from_json(file_path)
     for i in range(0, len(data), batch_size):
-        yield data[i:i + batch_size]
+        yield data[i : i + batch_size]
 
 
 def process_large_patch_pairs(patch_pairs, batch_size=100):
@@ -233,7 +236,9 @@ def process_large_patch_pairs(patch_pairs, batch_size=100):
     pattern_counter = Counter()
     triggerable_initial = Counter()
     actually_changed = Counter()
-    for batch in tqdm(load_from_tmpfile(temp_file, batch_size), desc="processing batches", total=total_batches, leave=False):
+    for batch in tqdm(
+        load_from_tmpfile(temp_file, batch_size), desc="processing batches", total=total_batches, leave=False
+    ):
         for condition, consequent in batch:
             diff_tokens = compute_token_diff(condition, consequent)
             if not diff_tokens:
@@ -246,6 +251,8 @@ def process_large_patch_pairs(patch_pairs, batch_size=100):
                 triggerable_initial[trigger_sequence] += new_patterns[pattern]
                 actually_changed[pattern] += new_patterns[pattern]
     return filter_patterns(pattern_counter, triggerable_initial, actually_changed)
+
+
 if __name__ == "__main__":
     condition = "STRING = STRING + STRING"
     consequent = "STRING += STRING"
