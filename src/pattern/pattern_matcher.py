@@ -65,7 +65,7 @@ if __name__ == "__main__":
     support_values = range(2, 21, 2)  # support値の範囲
     heatmap_data = np.zeros((len(support_values), len(support_values)))
 
-    for index, proj1 in enumerate(projects):
+    for index, proj1 in enumerate(projects[:-1]):
         print(f"loading {proj1}")
         patterns1 = load_from_json(f"{dir_path}/{proj1}")
         for proj2 in projects[index:]:
