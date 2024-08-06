@@ -6,6 +6,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def calc_pattern_match_rate(patterns1, patterns2):
     """パターンの一致度を計算
 
@@ -16,9 +17,9 @@ def calc_pattern_match_rate(patterns1, patterns2):
     Returns:
         float: 一致度（Jaccard類似度）
     """
-    patterns1_set = set(tuple(item['pattern']) for item in patterns1)
-    patterns2_set = set(tuple(item['pattern']) for item in patterns2)
-    
+    patterns1_set = set(tuple(item["pattern"]) for item in patterns1)
+    patterns2_set = set(tuple(item["pattern"]) for item in patterns2)
+
     intersection = patterns1_set & patterns2_set
     union = patterns1_set | patterns2_set
 
@@ -26,6 +27,7 @@ def calc_pattern_match_rate(patterns1, patterns2):
         return 0.0
 
     return round((len(intersection) / len(union)), 3)
+
 
 def filter_patterns_by_support(patterns, min_support):
     """指定されたサポート値以上のパターンをフィルタリングする
@@ -37,7 +39,8 @@ def filter_patterns_by_support(patterns, min_support):
     Returns:
         list: フィルタリングされたパターンのリスト
     """
-    return [pattern for pattern in patterns if pattern['support'] >= min_support]
+    return [pattern for pattern in patterns if pattern["support"] >= min_support]
+
 
 def calculate_match_rate(min_support2, filtered_patterns1, patterns2):
     """パターン一致度を計算する
@@ -52,6 +55,7 @@ def calculate_match_rate(min_support2, filtered_patterns1, patterns2):
     """
     filtered_patterns2 = filter_patterns_by_support(patterns2, min_support2)
     return min_support2, calc_pattern_match_rate(filtered_patterns1, filtered_patterns2)
+
 
 if __name__ == "__main__":
     owner = "numpy"
@@ -70,19 +74,28 @@ if __name__ == "__main__":
             for min_support1 in tqdm(support_values, desc="support1", leave=False):
                 filtered_patterns1 = filter_patterns_by_support(patterns1, min_support1)
                 with ProcessPoolExecutor() as executor:
-                    futures = {executor.submit(calculate_match_rate, min_support2, filtered_patterns1, patterns2): min_support2 for min_support2 in support_values}
+                    futures = {
+                        executor.submit(
+                            calculate_match_rate, min_support2, filtered_patterns1, patterns2
+                        ): min_support2
+                        for min_support2 in support_values
+                    }
                     for future in as_completed(futures):
                         min_support2 = futures[future]
                         try:
                             match_rate = future.result()[1]
-                            heatmap_data[support_values.index(min_support1), support_values.index(min_support2)] += match_rate
+                            heatmap_data[
+                                support_values.index(min_support1), support_values.index(min_support2)
+                            ] += match_rate
                         except Exception as e:
                             print(f"Error calculating match rate: {e}")
 
     # ヒートマップを描画
     print("make heatmap...")
     plt.figure(figsize=(10, 8))
-    sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="YlGnBu", xticklabels=support_values, yticklabels=support_values)
+    sns.heatmap(
+        heatmap_data, annot=True, fmt=".2f", cmap="YlGnBu", xticklabels=support_values, yticklabels=support_values
+    )
     plt.title("Pattern Match Rates for Different Support Values")
     plt.xlabel("Support Values for Project 1")
     plt.ylabel("Support Values for Project 2")

@@ -5,6 +5,7 @@ from constants import path
 from utils.file_processor import list_files_in_directory, dump_to_json
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+
 class PrefixSpan:
     def __init__(self, min_support):
         self.min_support = min_support
@@ -17,7 +18,7 @@ class PrefixSpan:
 
     def prefix_span(self, prefix, projected_db):
         freq_patterns = self.get_frequent_items(projected_db)
-        for (item, support) in tqdm(freq_patterns, desc="Generating patterns", leave=False):
+        for item, support in tqdm(freq_patterns, desc="Generating patterns", leave=False):
             new_prefix = prefix + [item]
             self.frequent_patterns.append((new_prefix, support))
             new_projected_db = self.build_projected_db(projected_db, item)
@@ -41,10 +42,11 @@ class PrefixSpan:
         for sequence in projected_db:
             try:
                 index = sequence.index(item)
-                new_projected_db.append(sequence[index + 1:])
+                new_projected_db.append(sequence[index + 1 :])
             except ValueError:
                 continue
         return new_projected_db
+
 
 def process_patch_pairs(patch_pairs):
     sequences = []
@@ -54,12 +56,13 @@ def process_patch_pairs(patch_pairs):
             continue
         merged_diff_token = merge_consecutive_tokens(diff_tokens)
         sequences.append(merged_diff_token)
-    
+
     min_support = 2
     prefix_span = PrefixSpan(min_support)
     patterns = prefix_span.fit(sequences)
 
     return patterns
+
 
 def process_project(file_path, output_path):
     patch_pairs = extract_diff(file_path)
@@ -67,6 +70,7 @@ def process_project(file_path, output_path):
     result = [{"pattern": pattern, "support": support} for pattern, support in patterns]
     dump_to_json(result, output_path)
     return output_path
+
 
 if __name__ == "__main__":
     owner = "numpy"

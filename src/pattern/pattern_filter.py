@@ -5,6 +5,8 @@ from pattern.source_preprocessor import extract_diff
 from pattern.converter import extract_trigger_sequence, extract_pattern_change
 from pattern.source_preprocessor import variable_name_preprocessing
 from tqdm import tqdm
+
+
 def _contains_plus_and_minus(pattern):
     """パターンに`-`と`+`が同時に存在するかを確認する
 
@@ -21,10 +23,12 @@ def _contains_plus_and_minus(pattern):
     contains_plus = any(token.startswith("+") for token in pattern)
     return contains_minus and contains_plus
 
+
 def _is_subpattern(small_pattern, big_pattern):
     small = set(small_pattern)
     big = set(big_pattern)
     return small.issubset(big)
+
 
 def filter_patterns(patterns, patch_pairs, threshold=0.1):
     """パターンカウンターから指定された条件を満たさないパターンをフィルタリングする
@@ -45,13 +49,12 @@ def filter_patterns(patterns, patch_pairs, threshold=0.1):
     filtered_patterns = []
     sorted_patterns = sorted(patterns, key=lambda x: -len(x[0]))
 
-
     for i, pattern in tqdm(enumerate(sorted_patterns), total=len(sorted_patterns), leave=False):
         # 変更を提案しないコード（`-`と`+`が同時に存在しないパターン）を削除
         if not _contains_plus_and_minus(pattern):
             continue
 
-         # 重複する意味パターンを無視
+        # 重複する意味パターンを無視
         duplicate_found = False
         for larger_pattern in sorted_patterns[:i]:
             if _is_subpattern(pattern, larger_pattern):
@@ -74,11 +77,7 @@ def filter_patterns(patterns, patch_pairs, threshold=0.1):
                 actually_changed += 1
 
         # 信頼度を計算
-        confidence = (
-            actually_changed / triggerable_initial
-            if triggerable_initial > 0
-            else 0
-        )
+        confidence = actually_changed / triggerable_initial if triggerable_initial > 0 else 0
 
         # 10%未満の信頼度のパターンを削除
         if confidence < threshold:
@@ -87,7 +86,7 @@ def filter_patterns(patterns, patch_pairs, threshold=0.1):
         # フィルタされたパターンを追加
         filtered_patterns.append({"pattern": pattern, "confidence": confidence})
 
-    return filtered_patterns  
+    return filtered_patterns
 
 
 if __name__ == "__main__":
@@ -97,7 +96,7 @@ if __name__ == "__main__":
     projects = list_files_in_directory(pattern_path)
     for project in projects:
         patterns = load_from_json(f"{pattern_path}/{project}")
-        patterns = set([tuple(item['pattern']) for item in patterns])
+        patterns = set([tuple(item["pattern"]) for item in patterns])
         patch_pairs = extract_diff(f"{test_path}/{project}")
         output_path = f"{path.INTERMEDIATE}/pattern/filtered/{owner}/{project}"
 

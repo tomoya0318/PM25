@@ -43,7 +43,7 @@ def extract_project_name(project_filename):
 
 
 if __name__ == "__main__":
-    owner = "numpy"
+    owner = "anaconda"
     dir_path = f"{path.INTERMEDIATE}/dev/{owner}"
     projects = list_files_in_directory(dir_path)
     project_names = [extract_project_name(proj) for proj in projects]

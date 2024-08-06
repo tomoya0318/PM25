@@ -107,7 +107,9 @@ def extract_trigger_sequence(pattern):
     Returns:
         str: トリガーシーケンスのトークンシーケンスを文字列で返す
     """
-    trigger_sequence = ' '.join(token.lstrip("-=") for token in pattern if token.startswith("=") or token.startswith("-"))
+    trigger_sequence = " ".join(
+        token.lstrip("-=") for token in pattern if token.startswith("=") or token.startswith("-")
+    )
     return trigger_sequence
 
 
@@ -120,7 +122,9 @@ def extract_pattern_change(pattern):
     Returns:
         str: 変更部分のトークンシーケンスを文字列で返す
     """
-    pattern_changed = ' '.join(token.lstrip("+=") for token in pattern if token.startswith("=") or token.startswith("+"))
+    pattern_changed = " ".join(
+        token.lstrip("+=") for token in pattern if token.startswith("=") or token.startswith("+")
+    )
     return pattern_changed
 
 

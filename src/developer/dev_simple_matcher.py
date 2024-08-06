@@ -3,6 +3,7 @@ from itertools import combinations
 from utils.file_processor import list_files_in_directory, extract_project_name, load_from_json
 from constants import path
 
+
 def calc_dev_match_rate(dev1, dev2):
     """2つのプロジェクトの開発者の一致率を計算
 
@@ -20,6 +21,7 @@ def calc_dev_match_rate(dev1, dev2):
         return 0.0
 
     return round((len(intersection) / len(union)), 2)
+
 
 if __name__ == "__main__":
     owner = "numpy"

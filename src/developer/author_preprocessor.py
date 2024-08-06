@@ -38,7 +38,7 @@ def save_author_to_json(authors, save_path):
 
 
 if __name__ == "__main__":
-    owner = "numpy"
+    owner = "anaconda"
     dir_path = f"{path.INTERMEDIATE}/train_data/{owner}"
     projects = list_files_in_directory(dir_path)
     for project in projects:
