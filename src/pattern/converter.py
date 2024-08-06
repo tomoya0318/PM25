@@ -105,10 +105,23 @@ def extract_trigger_sequence(pattern):
         pattern (tuple): パターンのトークンシーケンス
 
     Returns:
-        tuple: トリガーシーケンスのトークンシーケンス
+        str: トリガーシーケンスのトークンシーケンスを文字列で返す
     """
-    trigger_sequence = tuple(token for token in pattern if token.startswith("=") or token.startswith("-"))
+    trigger_sequence = ' '.join(token.lstrip("-=") for token in pattern if token.startswith("=") or token.startswith("-"))
     return trigger_sequence
+
+
+def extract_pattern_change(pattern):
+    """パターンから変更部後のシーケンスを抽出する．
+
+    Args:
+        pattern (tuple): パターンのトークンシーケンス
+
+    Returns:
+        str: 変更部分のトークンシーケンスを文字列で返す
+    """
+    pattern_changed = ' '.join(token.lstrip("+=") for token in pattern if token.startswith("=") or token.startswith("+"))
+    return pattern_changed
 
 
 def update_pattern_counter(counter, new_tokens):
