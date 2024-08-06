@@ -1,4 +1,4 @@
-from developer.dev_matcher import calc_dev_match_rate
+from developer.dev_commit_matcher import calc_dev_match_rate
 from developer.author_preprocessor import json_to_set
 from constants import path
 
