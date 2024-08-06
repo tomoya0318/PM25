@@ -84,19 +84,6 @@ def dump_to_json(data, file_path):
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
-def format_pattern(pattern):
-    """
-    パターン文字列をフォーマットしてリストに変換する関数
-
-    Args:
-        pattern (str): フォーマットするパターン文字列．例: "(a, b, c)"
-
-    Returns:
-        list: フォーマットされたパターンのリスト．例: ['a', 'b', 'c']
-    """
-    return pattern.strip("()").split(", ")
-
-
 def list_files_in_directory(directory):
     """指定されたディレクトリ内のすべてのファイル名を取得する関数
 
