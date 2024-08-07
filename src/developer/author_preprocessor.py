@@ -17,7 +17,7 @@ def extract_author(file_path):
         data = json.load(file)
 
     result = {}
-    for item in tqdm(data):
+    for item in tqdm(data, leave=False):
         author = decode_unicode_escapes(item["author"])
         if author in result:
             result[author] += 1
