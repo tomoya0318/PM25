@@ -1,7 +1,7 @@
 import csv
 import numpy as np
 from itertools import combinations
-from utils.file_processor import load_from_json, list_files_in_directory
+from utils.file_processor import load_from_json, list_files_in_directory, extract_project_name
 from constants import path
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -30,23 +30,11 @@ def create_commit_vector(authors, all_authors):
     return [authors.get(author, 0) for author in all_authors]
 
 
-def extract_project_name(project_filename):
-    """プロジェクトのファイル名からプロジェクト名を抽出する
-
-    Args:
-        project_filename (str): プロジェクトのファイル名
-
-    Returns:
-        str: 抽出されたプロジェクト名
-    """
-    return project_filename.split("_")[1]
-
-
 if __name__ == "__main__":
-    owner = "anaconda"
+    owner = "numpy"
     dir_path = f"{path.INTERMEDIATE}/dev/{owner}"
     projects = list_files_in_directory(dir_path)
-    project_names = [extract_project_name(proj) for proj in projects]
+    project_names = [extract_project_name(proj, owner) for proj in projects]
 
     # コサイン類似度を保存するための行列を初期化
     similarity_matrix = np.zeros((len(projects), len(projects)))
