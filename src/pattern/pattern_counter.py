@@ -8,7 +8,7 @@ if __name__ == "__main__":
     dir_path = f"{path.INTERMEDIATE}/pattern/{owner}"
     projects = list_files_in_directory(dir_path)
 
-    project_names = [extract_project_name(proj) for proj in projects]
+    project_names = [extract_project_name(proj, owner) for proj in projects]
     element_counts = []
 
     for project in projects:
