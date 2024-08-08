@@ -1,4 +1,5 @@
 from constants import path
+from tqdm import tqdm
 from utils.file_processor import load_from_json, dump_to_json, get_filename, list_files_in_directory
 
 
@@ -42,8 +43,8 @@ def _extract_required_data(data):
 
 if __name__ == "__main__":
     owner = "numpy"
-    dir_path = f"{path.RESOURCE}/{owner}"
+    dir_path = f"{path.RESOURCE}/ten_year_{owner}"
     projects = list_files_in_directory(dir_path)
-    for project in projects:
+    for project in tqdm(projects, leave=False):
         file_path = f"{dir_path}/{project}"
-        split_data(file_path, owner)
+        split_data(file_path, f"ten_{owner}")
