@@ -1,6 +1,7 @@
 import os
 import shutil
 import json
+import re
 
 
 def get_filename(file_path):
@@ -29,8 +30,6 @@ def ensure_dir_exists(file_path):
     if not os.path.exists(dir):
         os.makedirs(dir, exist_ok=True)
         print(f"Directory created: {dir}")
-    else:
-        print(f"Directory already exists: {dir}")
 
 
 def decode_unicode_escapes(s):
@@ -101,7 +100,7 @@ def list_files_in_directory(directory):
         return []
 
 
-def extract_project_name(project_filename):
+def extract_project_name(project_filename, owner):
     """プロジェクトのファイル名からプロジェクト名を抽出する
 
     Args:
@@ -110,7 +109,12 @@ def extract_project_name(project_filename):
     Returns:
         str: 抽出されたプロジェクト名
     """
-    return project_filename.split("_")[1]
+    pattern = fr'^{owner}_(.+?)_Python_master\.json$'
+    match = re.search(pattern, project_filename)
+    if match:
+        return match.group(1)
+    else:
+        return None
 
 
 def count_elements_in_json(file_path):
