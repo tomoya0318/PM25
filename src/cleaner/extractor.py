@@ -6,15 +6,15 @@ from constants import path
 def get_oldest_date(data):
     oldest_date = None
     for item in data:
-        created_at = datetime.strptime(item["created_at"], "%Y-%m-%d %H:%M:%S")
+        created_at = datetime.strptime(item["created_at"].split()[0], "%Y-%m-%d")
         if oldest_date is None or created_at < oldest_date:
             oldest_date = created_at
     return oldest_date
 
-def extract_ten_year_data(data, start_date, end_date):
+def extract_term_data(data, start_date, end_date):
     extract_data = []
     for item in data:
-        created_at = datetime.strptime(item["created_at"], "%Y-%m-%d %H:%M:%S")
+        created_at = datetime.strptime((item["created_at"]).split()[0], "%Y-%m-%d")
         if start_date <= created_at <= end_date:
             extracted_item = {
                 "author": item.get("author", ""),
@@ -28,13 +28,20 @@ def extract_ten_year_data(data, start_date, end_date):
 if __name__ == "__main__":
     owner = "numpy"
     dir_path = f"{path.RESOURCE}/{owner}"
-    out_path = f"{path.RESOURCE}/ten_year_{owner}"
+    out_path = f"{path.RESOURCE}/2020to2024_{owner}"
+    START_DATE = datetime.strptime("2020-1-1", "%Y-%m-%d")
+    END_DATE = datetime.strptime("2024-1-1", "%Y-%m-%d")
     projects = list_files_in_directory(dir_path)
+    cnt = 0
 
     for project in tqdm(projects, leave=False):
         data = load_from_json(f"{dir_path}/{project}")
         project_start_date = get_oldest_date(data)
-        if project_start_date is not None:  # Check if the start date was found
-            project_end_date = project_start_date + timedelta(days=10*365)
-            extracted_data = extract_ten_year_data(data, project_start_date, project_end_date)
+        if project_start_date != None and project_start_date < START_DATE:
+            extracted_data = extract_term_data(data, START_DATE, END_DATE)
+            if not extracted_data:
+                continue
+            cnt += 1
             dump_to_json(extracted_data, f"{out_path}/{project}")
+
+    print(cnt)
