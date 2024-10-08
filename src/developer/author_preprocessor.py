@@ -33,16 +33,14 @@ def save_author_to_json(authors, save_path):
         authors (dict): 保存する開発者の情報を含む辞書
         save_path (str): 保存するファイルのパス
     """
-    ensure_dir_exists(save_path)
     dump_to_json(authors, save_path)
 
 
 if __name__ == "__main__":
-    owner = "anaconda"
+    owner = "numpy"
     dir_path = f"{path.INTERMEDIATE}/train_data/{owner}"
     projects = list_files_in_directory(dir_path)
-    for project in projects:
-        print(project)
+    for project in tqdm(projects, leave=False):
         file_path = f"{dir_path}/{project}"
         output_path = f"{path.INTERMEDIATE}/dev/{owner}/{project}"
         authors = extract_author(file_path)
