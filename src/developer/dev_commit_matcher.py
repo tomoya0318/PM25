@@ -31,6 +31,8 @@ def create_commit_vector(authors, all_authors):
 
 
 if __name__ == "__main__":
+    """データセットに存在する2つプロジェクトに参加した開発者のコミット数ののコサイン類似度を算出
+    """
     owner = "numpy"
     dir_path = f"{path.INTERMEDIATE}/dev/{owner}"
     projects = list_files_in_directory(dir_path)
