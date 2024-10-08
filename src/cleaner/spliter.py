@@ -8,6 +8,7 @@ def split_data(file_path, dir_name):
 
     Args:
         file_path (str): 元のデータへのpath
+        dir_name (str): 分割したデータを保存するディレクトリの名前
     """
     file_name = get_filename(file_path)
     data = load_from_json(file_path)
@@ -43,8 +44,9 @@ def _extract_required_data(data):
 
 if __name__ == "__main__":
     owner = "numpy"
-    dir_path = f"{path.RESOURCE}/ten_year_{owner}"
+    dir_path = f"{path.RESOURCE}/2020to2024_{owner}"
+    output_path_name = f"2020to2024_{owner}"
     projects = list_files_in_directory(dir_path)
     for project in tqdm(projects, leave=False):
         file_path = f"{dir_path}/{project}"
-        split_data(file_path, f"ten_{owner}")
+        split_data(file_path, output_path_name)
