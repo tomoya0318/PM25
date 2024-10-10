@@ -1,6 +1,6 @@
 from constants import path
-from pattern.converter import process_large_patch_pairs
-from pattern.source_preprocessor import extract_diff, save_patterns_to_json
+from pattern.code2diff.converter import process_large_patch_pairs
+from pattern.code2diff.source_preprocessor import extract_diff, save_patterns_to_json
 from utils.file_processor import list_files_in_directory
 
 

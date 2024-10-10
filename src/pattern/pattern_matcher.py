@@ -1,7 +1,7 @@
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from constants import path
-from utils.file_processor import load_from_json
+from utils.file_processor import load_from_json, extract_project_name
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -59,8 +59,11 @@ def calculate_match_rate(min_support2, filtered_patterns1, patterns2):
 
 if __name__ == "__main__":
     owner = "numpy"
-    dir_path = f"{path.INTERMEDIATE}/pattern/prefix/{owner}"
-    projects = ["numpy_numpy_Python_master.json", "numpy_numpy-refactor_Python_master.json"]
+    dir_path = f"{path.INTERMEDIATE}/pattern/{owner}"
+    # projects = ["numpy_numpy_Python_master.json", "numpy_numpy-financial_Python_master.json"]
+    projects = ["numpy_numpydoc_master.json", "numpy_numpy.org_Python_master.json"]
+    project_name = [extract_project_name(project, owner) for project in projects]
+    #"numpy_numpydoc_Python_master.json"
 
     support_values = range(2, 21, 2)  # support値の範囲
     heatmap_data = np.zeros((len(support_values), len(support_values)))
@@ -80,26 +83,52 @@ if __name__ == "__main__":
                         ): min_support2
                         for min_support2 in support_values
                     }
-                    for future in as_completed(futures):
+
+                    # tqdmを使用してプログレスバーを作成
+                    for future in tqdm(as_completed(futures), total=len(futures), desc="Calculating match rates", leave=False):
                         min_support2 = futures[future]
                         try:
                             match_rate = future.result()[1]
+                            # 累積せず直接代入
                             heatmap_data[
                                 support_values.index(min_support1), support_values.index(min_support2)
-                            ] += match_rate
+                            ] = match_rate
+
                         except Exception as e:
                             print(f"Error calculating match rate: {e}")
 
     # ヒートマップを描画
     print("make heatmap...")
     plt.figure(figsize=(10, 8))
+    # データの行を逆順にする
+    print(heatmap_data)
+    reversed_heatmap_data = heatmap_data[::-1]
+
     sns.heatmap(
-        heatmap_data, annot=True, fmt=".2f", cmap="YlGnBu", xticklabels=support_values, yticklabels=support_values
+        reversed_heatmap_data, 
+        annot=True, 
+        fmt=".2f", 
+        cmap="YlGnBu", 
+        xticklabels=support_values, 
+        yticklabels=list(reversed(support_values)),  # Y軸ラベルも逆順に設定
+        vmin=0, 
+        vmax=1.0
     )
-    plt.title("Pattern Match Rates for Different Support Values")
-    plt.xlabel("Support Values for Project 1")
-    plt.ylabel("Support Values for Project 2")
+    plt.xlabel(project_name[1])
+    plt.ylabel(project_name[0])
 
     # 保存先を指定してヒートマップを保存
-    save_path = f"{path.RESULTS}/{owner}/pattern_match_rates_heatmap.png"
+    save_path = f"{path.RESULTS}/{owner}/{project_name[0]}_{project_name[1]}_pattern_match_rates_heatmap.png"
     plt.savefig(save_path)
+
+
+# projects = ["numpy_numpy_Python_master.json", "numpy_numpy.org_Python_master.json"]
+    projects = ["numpy_numpy_Python_master.json", "numpy_numpy-vendor_Python_master.json"]
+    # projects = ["numpy_numpy_Python_master.json", "numpy_numpy-refactor_Python_master.json"]
+    # projects = ["numpy_numpy_Python_master.json", "numpy_numpy-financial_Python_master.json"]
+    # projects = ["numpy_numpy_Python_master.json", "numpy_numpydoc_Python_master.json"]
+    # projects = ["numpy_numpy-financial_Python_master.json", "numpy_numpy.org_Python_master.json"]
+    # projects = ["numpy_numpy-financial_Python_master.json", "numpy_numpy-refactor_Python_master.json"]
+    # projects = ["numpy_numpydoc_Python_master.json", "numpy_numpy.org_Python_master.json"]
+    # projects = ["numpy_numpydoc_Python_master.json", "numpy_numpy-refactor_Python_master.json"]
+    # projects = ["numpy_numpydoc_Python_master.json", "numpy_numpy-financial_Python_master.json"]

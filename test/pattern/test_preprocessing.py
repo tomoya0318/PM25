@@ -2,7 +2,7 @@ import pytest
 import os
 import json
 
-from pattern.source_preprocessor import variable_name_preprocessing, tokenize_python_code, extract_diff
+from pattern.code2diff.source_preprocessor import variable_name_preprocessing, tokenize_python_code, extract_diff
 
 
 @pytest.fixture

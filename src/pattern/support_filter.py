@@ -2,9 +2,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from constants import path
 from utils.file_processor import load_from_json, dump_to_json
 from utils.ast_checker import are_ast_equal
-from pattern.source_preprocessor import extract_diff
-from pattern.converter import extract_trigger_sequence, extract_pattern_change
-from pattern.source_preprocessor import variable_name_preprocessing
+from pattern.code2diff.source_preprocessor import extract_diff
+from pattern.code2diff.converter import extract_trigger_sequence, extract_pattern_change
+from pattern.code2diff.source_preprocessor import variable_name_preprocessing
 from pattern.pattern_matcher import filter_patterns_by_support
 from tqdm import tqdm
 
@@ -64,7 +64,6 @@ def process_single_project(project, pattern_path, test_path, output_path, min_su
     try:
         patterns = load_from_json(f"{pattern_path}/{project}")
         filtered_patterns_by_support = filter_patterns_by_support(patterns, min_support)
-        
         # pattern部分だけを抽出
         patterns_to_filter = [item["pattern"] for item in filtered_patterns_by_support]
         patch_pairs = extract_diff(f"{test_path}/{project}")
@@ -136,4 +135,3 @@ if __name__ == "__main__":
 
         # "numpy_numpy-financial_Python_master.json": 2,
         # "numpy_numpydoc_Python_master.json": 2
-    

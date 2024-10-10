@@ -3,7 +3,7 @@ from collections import Counter
 from itertools import combinations
 import tokenize
 from tqdm import tqdm
-from pattern.source_preprocessor import variable_name_preprocessing, tokenize_python_code
+from pattern.code2diff.source_preprocessor import variable_name_preprocessing, tokenize_python_code
 from utils.file_processor import dump_to_json, load_from_json
 from constants import path
 

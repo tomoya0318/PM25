@@ -1,6 +1,6 @@
 from tqdm import tqdm
-from pattern.converter import compute_token_diff, merge_consecutive_tokens
-from pattern.source_preprocessor import extract_diff
+from pattern.code2diff.converter import compute_token_diff, merge_consecutive_tokens
+from pattern.code2diff.source_preprocessor import extract_diff
 from constants import path
 from utils.file_processor import list_files_in_directory, dump_to_json
 from concurrent.futures import ProcessPoolExecutor, as_completed

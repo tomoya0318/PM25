@@ -2,9 +2,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from constants import path
 from utils.file_processor import load_from_json, dump_to_json, extract_project_name
 from utils.ast_checker import are_ast_equal
-from pattern.source_preprocessor import extract_diff
-from pattern.converter import extract_trigger_sequence, extract_pattern_change
-from pattern.source_preprocessor import variable_name_preprocessing
+from pattern.code2diff.source_preprocessor import extract_diff
+from pattern.code2diff.converter import extract_trigger_sequence, extract_pattern_change
+from pattern.code2diff.source_preprocessor import variable_name_preprocessing
 from tqdm import tqdm
 import math
 from collections import defaultdict
@@ -46,7 +46,7 @@ def filter_pattern_chunk(pattern_chunk, sorted_patterns, patch_pairs, threshold)
         for condition, consequent in patch_pairs:
             condition = variable_name_preprocessing(condition)
             consequent = variable_name_preprocessing(consequent)
-            
+
             if not are_ast_equal(trigger_sequence, condition):
                 continue
             triggerable_initial += 1
@@ -122,28 +122,27 @@ def execute_parallel_single(projects, pattern_path, test_path, owner):
             except Exception as e:
                 print(f"Error processing project: {e}")
 
-def process_merge_project(project, patterns, test_path, output_path):
+def process_merge_project(project, merge_data, test_path, output_path):
     print(f"Processing project: {project}")
     try:
         patch_pairs = extract_diff(f"{test_path}/{project}")
-        filtered_patterns = filter_patterns(patterns, patch_pairs)
+        filtered_patterns = filter_patterns(merge_data, patch_pairs)
         dump_to_json(filtered_patterns, output_path)
     except Exception as e:
         print(f"Error processing project {project}: {e}")
 
 def execute_parallel_merge(projects, pattern_path, test_path, owner):
-    merge_patterns = []
+    merge_data = []
     projects_name = [extract_project_name(project, owner) for project in projects]
     for project in projects:
-        pattern = load_from_json(f"{pattern_path}/{project}")
-        patterns = [item["pattern"] for item in pattern]
-        merge_patterns += patterns
+        data = load_from_json(f"{pattern_path}/{project}")
+        merge_data += data
 
     with ProcessPoolExecutor(max_workers=4) as executor:
         futures = []
         for project in projects:
             output_path = f"{path.INTERMEDIATE}/pattern/filtered/{owner}/merged_{projects_name[0]}_{projects_name[1]}_{project}"
-            futures.append(executor.submit(process_merge_project, project, merge_patterns, test_path, output_path))
+            futures.append(executor.submit(process_merge_project, project, merge_data, test_path, output_path))
 
         for future in as_completed(futures):
             try:
