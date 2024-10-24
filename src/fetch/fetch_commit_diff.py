@@ -1,11 +1,11 @@
 import os
 from git import Repo
 from constants import path
-from utils.file_processor import ensure_dir_exists, dump_to_json
+from utils.file_processor import ensure_dir_exists, dump_to_json, get_filename
 
 
 def clone_project(url: str) -> Repo | str:
-    dir_path = f"{path.TMP}/vscode"
+    dir_path = f"{path.TMP}/{get_filename(url)}"
     ensure_dir_exists(dir_path)
     try:
         if os.path.exists(dir_path):
@@ -23,12 +23,12 @@ def get_hash_diff(repo: Repo, commit_hash: str) -> str:
     try:
         commit = repo.commit(commit_hash)
         parent = commit.parents[0]
-        diff = parent.diff(commit, create_patch=True)  # create_patch=True を追加
+        diff = parent.diff(commit, create_patch=True)
 
         diff_output = ""
         for d in diff:
             diff_output += f"File: {d.a_path}\n"
-            diff_output += d.diff.decode('utf-8')
+            diff_output += d.diff.decode("utf-8")
             diff_output += "\n\n"
         return diff_output
     except Exception as e:
@@ -36,27 +36,24 @@ def get_hash_diff(repo: Repo, commit_hash: str) -> str:
 
 
 def parse_diff(diff: str):
-    result: list[dict[str, str]] = []
+    result: list[dict[str, str | list]] = []
     file_name: str = ""
-    lines = diff.split('\n')
+    lines = diff.split("\n")
     for i, line in enumerate(lines):
         if line.startswith("File:"):
             file_name = line.split("File:", 1)[-1]
         if line.startswith("-"):
-            for plus_line in lines[i + 1:]:
+            for plus_line in lines[i + 1 :]:
                 if plus_line.startswith("+"):
-                    result.append({
-                        "File": file_name,
-                        "cosequent": line[1:],
-                        "condition": plus_line[1:]
-                    })
+                    result.append({"File": file_name, "condition": [line[1:]], "consequent": [plus_line[1:]]})
                 break
 
     return result
 
+
 def save_diff_to_file(diff_content, output_file):
     try:
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(diff_content)
         print(f"Diff content saved to {output_file}")
     except Exception as e:

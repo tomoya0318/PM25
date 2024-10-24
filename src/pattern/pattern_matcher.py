@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # projects = ["numpy_numpy_Python_master.json", "numpy_numpy-financial_Python_master.json"]
     projects = ["numpy_numpydoc_master.json", "numpy_numpy.org_Python_master.json"]
     project_name = [extract_project_name(project, owner) for project in projects]
-    #"numpy_numpydoc_Python_master.json"
+    # "numpy_numpydoc_Python_master.json"
 
     support_values = range(2, 21, 2)  # support値の範囲
     heatmap_data = np.zeros((len(support_values), len(support_values)))
@@ -85,14 +85,16 @@ if __name__ == "__main__":
                     }
 
                     # tqdmを使用してプログレスバーを作成
-                    for future in tqdm(as_completed(futures), total=len(futures), desc="Calculating match rates", leave=False):
+                    for future in tqdm(
+                        as_completed(futures), total=len(futures), desc="Calculating match rates", leave=False
+                    ):
                         min_support2 = futures[future]
                         try:
                             match_rate = future.result()[1]
                             # 累積せず直接代入
-                            heatmap_data[
-                                support_values.index(min_support1), support_values.index(min_support2)
-                            ] = match_rate
+                            heatmap_data[support_values.index(min_support1), support_values.index(min_support2)] = (
+                                match_rate
+                            )
 
                         except Exception as e:
                             print(f"Error calculating match rate: {e}")
@@ -105,14 +107,14 @@ if __name__ == "__main__":
     reversed_heatmap_data = heatmap_data[::-1]
 
     sns.heatmap(
-        reversed_heatmap_data, 
-        annot=True, 
-        fmt=".2f", 
-        cmap="YlGnBu", 
-        xticklabels=support_values, 
+        reversed_heatmap_data,
+        annot=True,
+        fmt=".2f",
+        cmap="YlGnBu",
+        xticklabels=support_values,
         yticklabels=list(reversed(support_values)),  # Y軸ラベルも逆順に設定
-        vmin=0, 
-        vmax=1.0
+        vmin=0,
+        vmax=1.0,
     )
     plt.xlabel(project_name[1])
     plt.ylabel(project_name[0])
@@ -121,8 +123,7 @@ if __name__ == "__main__":
     save_path = f"{path.RESULTS}/{owner}/{project_name[0]}_{project_name[1]}_pattern_match_rates_heatmap.png"
     plt.savefig(save_path)
 
-
-# projects = ["numpy_numpy_Python_master.json", "numpy_numpy.org_Python_master.json"]
+    # projects = ["numpy_numpy_Python_master.json", "numpy_numpy.org_Python_master.json"]
     projects = ["numpy_numpy_Python_master.json", "numpy_numpy-vendor_Python_master.json"]
     # projects = ["numpy_numpy_Python_master.json", "numpy_numpy-refactor_Python_master.json"]
     # projects = ["numpy_numpy_Python_master.json", "numpy_numpy-financial_Python_master.json"]

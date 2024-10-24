@@ -3,11 +3,13 @@ from utils.file_processor import list_files_in_directory, extract_project_name
 from developer.author_preprocessor import extract_author
 from constants import path
 
+
 def count_developers_and_commits(file_path):
     authors = extract_author(file_path)
     author_count = len(authors)
     commit_count = sum(authors.values())
     return author_count, commit_count
+
 
 if __name__ == "__main__":
     owner = "numpy"
@@ -25,11 +27,7 @@ if __name__ == "__main__":
         commit_counts.append(commit_count)
 
     # polars DataFrameに変換
-    df = pl.DataFrame({
-        "project": project_names,
-        "developers": developer_counts,
-        "commits": commit_counts
-    })
+    df = pl.DataFrame({"project": project_names, "developers": developer_counts, "commits": commit_counts})
 
     # CSVファイルに出力
     csv_path = f"{path.RESULTS}/{owner}/dev_element_counts.csv"

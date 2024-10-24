@@ -37,8 +37,7 @@ def save_author_to_json(authors, save_path):
 
 
 if __name__ == "__main__":
-    """データに存在する開発者と，その人のコミット数をjsonファイルとして出力
-    """
+    """データに存在する開発者と，その人のコミット数をjsonファイルとして出力"""
     owner = "numpy"
     dir_path = f"{path.INTERMEDIATE}/train_data/{owner}"
     projects = list_files_in_directory(dir_path)

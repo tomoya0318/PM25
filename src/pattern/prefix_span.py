@@ -1,3 +1,4 @@
+import os
 from tqdm import tqdm
 from pattern.code2diff.converter import compute_token_diff, merge_consecutive_tokens
 from pattern.code2diff.source_preprocessor import extract_diff
@@ -7,8 +8,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
 class PrefixSpan:
-    def __init__(self, min_support):
+    def __init__(self, min_support, max_workers=20):
         self.min_support = min_support
+        self.max_workers = max_workers
 
     def fit(self, sequences):
         self.sequences = sequences
@@ -17,16 +19,17 @@ class PrefixSpan:
         return self.frequent_patterns
 
     def prefix_span(self, prefix, projected_db):
-        freq_patterns = self.get_frequent_items(projected_db)
-        for item, support in tqdm(freq_patterns, desc="Generating patterns", leave=False):
+        # 並列化されたget_frequent_itemsを呼び出し
+        freq_patterns = self.parallel_get_frequent_items(projected_db)
+        for item, support in freq_patterns:
             new_prefix = prefix + [item]
             self.frequent_patterns.append((new_prefix, support))
             new_projected_db = self.build_projected_db(projected_db, item)
             self.prefix_span(new_prefix, new_projected_db)
 
-    def get_frequent_items(self, projected_db):
+    def get_frequent_items(self, sequences_chunk):
         items = {}
-        for sequence in projected_db:
+        for sequence in sequences_chunk:
             unique_items = set()
             for item in sequence:
                 if item not in unique_items:
@@ -35,7 +38,24 @@ class PrefixSpan:
                     else:
                         items[item] = 1
                     unique_items.add(item)
-        return [(item, support) for item, support in items.items() if support >= self.min_support]
+        return items
+
+    def parallel_get_frequent_items(self, projected_db):
+        chunk_size = max(1, len(projected_db) // max(1, self.max_workers))
+        chunks = [projected_db[i : i + chunk_size] for i in range(0, len(projected_db), chunk_size)]
+
+        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = [executor.submit(self.get_frequent_items, chunk) for chunk in chunks]
+            items_list = {}
+            for future in as_completed(futures):
+                items = future.result()
+                for item, count in items.items():
+                    if item in items_list:
+                        items_list[item] += count
+                    else:
+                        items_list[item] = count
+
+        return [(item, support) for item, support in items_list.items() if support >= self.min_support]
 
     def build_projected_db(self, projected_db, item):
         new_projected_db = []
@@ -48,44 +68,77 @@ class PrefixSpan:
         return new_projected_db
 
 
-def process_patch_pairs(patch_pairs):
+def process_patch_pairs(patch_data):
     sequences = []
-    for condition, consequent in tqdm(patch_pairs, desc="Processing patch pairs", leave=False):
-        diff_tokens = compute_token_diff(condition, consequent)
+    for language, condition, consequent in patch_data:
+        diff_tokens = compute_token_diff(condition, consequent, language)
         if not diff_tokens:
             continue
         merged_diff_token = merge_consecutive_tokens(diff_tokens)
         sequences.append(merged_diff_token)
 
-    min_support = 2
+    min_support = 1
     prefix_span = PrefixSpan(min_support)
     patterns = prefix_span.fit(sequences)
 
-    return patterns
+    # 2つ以上のトークンで構成されたパターンのみをフィルタリング
+    filtered_patterns = [(pattern, support) for pattern, support in patterns if len(pattern) > 1]
+
+    return filtered_patterns
 
 
 def process_project(file_path, output_path):
-    patch_pairs = extract_diff(file_path)
-    patterns = process_patch_pairs(patch_pairs)
+    patch_data = extract_diff(file_path)
+    patterns = process_patch_pairs(patch_data)
     result = [{"pattern": pattern, "support": support} for pattern, support in patterns]
     dump_to_json(result, output_path)
     return output_path
 
 
-if __name__ == "__main__":
+def main():
     owner = "numpy"
-    dir_path = f"{path.INTERMEDIATE}/train_data/{owner}"
+    dir_path = f"{path.INTERMEDIATE}/train_data/2020to2024_{owner}"
     projects = list_files_in_directory(dir_path)
-    tasks = []
-    with ProcessPoolExecutor() as executor:
-        for project in projects:
-            file_path = f"{dir_path}/{project}"
-            output_path = f"{path.INTERMEDIATE}/pattern/prefix/{owner}/{project}"
-            tasks.append(executor.submit(process_project, file_path, output_path))
 
-        for future in tqdm(as_completed(tasks), total=len(tasks), desc="Processing projects"):
-            try:
-                result = future.result()
-                print(f"Completed processing {result}")
-            except Exception as e:
-                print(f"Error processing project: {e}")
+    # 使用可能なCPUコア数の半分を使用
+    cpu_count = os.cpu_count() or 1
+    max_workers = max(1, cpu_count // 2)
+
+    # タスクキューを作成
+    tasks = [(f"{dir_path}/{project}", f"{path.INTERMEDIATE}/pattern/{owner}/{project}") for project in projects]
+
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # 進捗バーの設定
+        pbar = tqdm(total=len(tasks), desc="Processing projects")
+
+        # 最初のバッチのタスクを開始
+        futures = {
+            executor.submit(process_project, file_path, output_path): (file_path, output_path)
+            for file_path, output_path in tasks[:max_workers]
+        }
+
+        while futures:
+            # 完了したタスクを処理
+            for future in as_completed(futures):
+                file_path, output_path = futures.pop(future)
+                try:
+                    result = future.result()
+                    pbar.update(1)
+                except Exception as e:
+                    print(f"Error processing project {file_path}: {e}")
+
+                # 新しいタスクがあれば追加
+                if tasks:
+                    new_file_path, new_output_path = tasks.pop(0)
+                    new_future = executor.submit(process_project, new_file_path, new_output_path)
+                    futures[new_future] = (new_file_path, new_output_path)
+
+        pbar.close()
+
+
+if __name__ == "__main__":
+    # main()
+    project = f"{path.INTERMEDIATE}/sample/vscode#87709.json"
+    out_path = f"{path.RESULTS}/sample/vscode#87709.json"
+    process_project(project, out_path)
+    print("end")

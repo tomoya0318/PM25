@@ -109,7 +109,7 @@ def extract_project_name(project_filename, owner):
     Returns:
         str: 抽出されたプロジェクト名
     """
-    pattern = fr'^{owner}_(.+?)_Python_master\.json$'
+    pattern = rf"^{owner}_(.+?)_Python_master\.json$"
     match = re.search(pattern, project_filename)
     if match:
         return match.group(1)

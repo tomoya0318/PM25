@@ -3,26 +3,28 @@ from collections import Counter
 from itertools import combinations
 import tokenize
 from tqdm import tqdm
-from pattern.code2diff.source_preprocessor import variable_name_preprocessing, tokenize_python_code
-from utils.file_processor import dump_to_json, load_from_json
+from codetokenizer.tokenizer import TokeNizer
+from pattern.code2diff.source_preprocessor import variable_name_preprocessing, extract_diff
+from utils.file_processor import dump_to_json, load_from_json, list_files_in_directory
 from constants import path
 
 
-def compute_token_diff(condition, consequent):
-    """トークン化された2つのPythonコード文字列の差分を計算する．
+def compute_token_diff(condition: str, consequent: str, language: str) -> list[str] | dict[str, str]:
+    """トークン化された2つのコード文字列の差分を計算する．
 
     Args:
-        condition (str): 変更前のPythonコード文字列
-        consequent (str): 変更後のPythonコード文字列
+        condition (str): 変更前のコード文字列
+        consequent (str): 変更後のコード文字列
 
     Returns:
-       list: 差分を示すトークンのリスト．削除されたトークンには「-」、追加されたトークンには「+」が付く．
+        list: 差分を示すトークンのリスト．削除されたトークンには「-」、追加されたトークンには「+」が付く．
     """
+    TN = TokeNizer(language)
     try:
-        token_condition = tokenize_python_code(variable_name_preprocessing(condition))
-        token_consequent = tokenize_python_code(variable_name_preprocessing(consequent))
-    except tokenize.TokenError:
-        return []
+        token_condition = TN.getPureTokens(variable_name_preprocessing(condition))
+        token_consequent = TN.getPureTokens(variable_name_preprocessing(consequent))
+    except tokenize.TokenError as e:
+        return {"error": str(e)}
 
     diff = []
 
@@ -206,7 +208,7 @@ def filter_patterns(counter, triggerable_initial, actually_changed, threshold=0.
     return filtered_counter
 
 
-def process_patch_pairs(patch_pairs):
+def process_patch_pairs(patch_pairs, language):
     """パッチのペアからパターンカウンターとトリガーシーケンスカウンターを計算する
 
     Args:
@@ -220,7 +222,7 @@ def process_patch_pairs(patch_pairs):
     actually_changed = Counter()
 
     for condition, consequent in tqdm(patch_pairs, desc="process patch", leave=False):
-        diff_tokens = compute_token_diff(condition, consequent)
+        diff_tokens = compute_token_diff(condition, consequent, language)
         if not diff_tokens:
             continue
         merged_diff_tokens = merge_consecutive_tokens(diff_tokens)
@@ -247,39 +249,22 @@ def load_from_tmpfile(file_path, batch_size):
         yield data[i : i + batch_size]
 
 
-def process_large_patch_pairs(patch_pairs, batch_size=100):
-    temp_file = save_to_tempfile(patch_pairs)
-    total_batches = (len(patch_pairs) + batch_size - 1) // batch_size
-    pattern_counter = Counter()
-    triggerable_initial = Counter()
-    actually_changed = Counter()
-    for batch in tqdm(
-        load_from_tmpfile(temp_file, batch_size), desc="processing batches", total=total_batches, leave=False
-    ):
-        for condition, consequent in batch:
-            diff_tokens = compute_token_diff(condition, consequent)
-            if not diff_tokens:
-                continue
-            merged_diff_tokens = merge_consecutive_tokens(diff_tokens)
-            new_patterns = extract_valid_subsequences(merged_diff_tokens)
-            update_pattern_counter(pattern_counter, merged_diff_tokens)
-            for pattern in new_patterns:
-                trigger_sequence = extract_trigger_sequence(pattern)
-                triggerable_initial[trigger_sequence] += new_patterns[pattern]
-                actually_changed[pattern] += new_patterns[pattern]
-    return filter_patterns(pattern_counter, triggerable_initial, actually_changed)
+def main():
+    project = f"{path.INTERMEDIATE}/sample/vscode#87709.json"
+    out_path = f"{path.RESULTS}/sample/vscode#87709.json"
+    patch_data = extract_diff(project)
+    result = []
+    for language, condition, consequent in patch_data:
+        diff = compute_token_diff(condition, consequent, language)
+        if isinstance(diff, dict) and "error" in diff:
+            print(f"エラーが発生しました: {diff["error"]}")
+            continue
+        if isinstance(diff, list) and not diff:
+            continue
+        merged_diff = merge_consecutive_tokens(diff)
+        result.append(merged_diff)
+    dump_to_json(result, out_path)
 
 
 if __name__ == "__main__":
-    condition = "STRING = STRING + STRING"
-    consequent = "STRING += STRING"
-    diff = compute_token_diff(condition, consequent)
-    merge_diff = merge_consecutive_tokens(diff)
-    print(extract_valid_subsequences(merge_diff))
-    # patch_pairs = [
-    #     ("i = dic[STRING]", "i = dic.get(STRING)"),
-    #     ("i = dic[STRING]", "i = dic.get(STRING)"),
-    #     ("x = y + z", "x = y * z"),
-    #     ("foo = bar()", "foo = baz()"),
-    # ]
-    # print(process_patch_pairs(patch_pairs))
+    main()
