@@ -2,9 +2,7 @@ import difflib
 import tokenize
 from tqdm import tqdm
 from codetokenizer.tokenizer import TokeNizer
-from pattern.code2diff.source_preprocessor import variable_name_preprocessing, extract_diff
-from utils.file_processor import dump_to_json
-from constants import path
+from pattern.code2diff.source_preprocessor import variable_name_preprocessing
 
 
 def compute_token_diff(condition: str, consequent: str, language: str) -> list[str] | dict[str, str]:
@@ -46,7 +44,7 @@ def compute_token_diff(condition: str, consequent: str, language: str) -> list[s
     return diff
 
 
-def merge_consecutive_tokens(diff):
+def merge_consecutive_tokens(diff) -> list:
     """連続するトークンを結合する．
 
     Args:
@@ -70,24 +68,3 @@ def merge_consecutive_tokens(diff):
 
     merged_diff.append(current_token)
     return merged_diff
-
-
-def main():
-    project = f"{path.INTERMEDIATE}/sample/vscode#87709.json"
-    out_path = f"{path.RESULTS}/sample/vscode#87709.json"
-    patch_data = extract_diff(project)
-    result = []
-    for language, condition, consequent in patch_data:
-        diff = compute_token_diff(condition, consequent, language)
-        if isinstance(diff, dict) and "error" in diff:
-            print(f"エラーが発生しました: {diff["error"]}")
-            continue
-        if isinstance(diff, list) and not diff:
-            continue
-        merged_diff = merge_consecutive_tokens(diff)
-        result.append(merged_diff)
-    dump_to_json(result, out_path)
-
-
-if __name__ == "__main__":
-    main()

@@ -1,9 +1,7 @@
-import os
-from tqdm import tqdm
 from pattern.code2diff.converter import compute_token_diff, merge_consecutive_tokens
 from pattern.code2diff.source_preprocessor import extract_diff
 from constants import path
-from utils.file_processor import list_files_in_directory, dump_to_json
+from utils.file_processor import dump_to_json
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
@@ -71,10 +69,13 @@ class PrefixSpan:
 def process_patch_pairs(patch_data):
     sequences = []
     for language, condition, consequent in patch_data:
-        diff_tokens = compute_token_diff(condition, consequent, language)
-        if not diff_tokens:
+        tokens_diff = compute_token_diff(condition, consequent, language)
+        if isinstance(tokens_diff, dict) and "error" in tokens_diff:
+            print(f"エラーが発生しました： {tokens_diff["error"]}")
             continue
-        merged_diff_token = merge_consecutive_tokens(diff_tokens)
+        if isinstance(tokens_diff, list) and not tokens_diff:
+            continue
+        merged_diff_token = merge_consecutive_tokens(tokens_diff)
         sequences.append(merged_diff_token)
 
     min_support = 1
@@ -82,9 +83,26 @@ def process_patch_pairs(patch_data):
     patterns = prefix_span.fit(sequences)
 
     # 2つ以上のトークンで構成されたパターンのみをフィルタリング
-    filtered_patterns = [(pattern, support) for pattern, support in patterns if len(pattern) > 1]
+    filtered_patterns = [
+        (pattern, support)
+        for pattern, support in patterns
+        if is_valid_pattern(pattern)
+    ]
 
     return filtered_patterns
+
+
+def is_valid_pattern(pattern):
+    if len(pattern) <= 1:
+        return False
+
+    has_diff_token = False
+    for token in pattern:
+        if token.startswith('-') or token.startswith('+'):
+            has_diff_token = True
+            break
+
+    return has_diff_token
 
 
 def process_project(file_path, output_path):
@@ -95,50 +113,8 @@ def process_project(file_path, output_path):
     return output_path
 
 
-def main():
-    owner = "numpy"
-    dir_path = f"{path.INTERMEDIATE}/train_data/2020to2024_{owner}"
-    projects = list_files_in_directory(dir_path)
-
-    # 使用可能なCPUコア数の半分を使用
-    cpu_count = os.cpu_count() or 1
-    max_workers = max(1, cpu_count // 2)
-
-    # タスクキューを作成
-    tasks = [(f"{dir_path}/{project}", f"{path.INTERMEDIATE}/pattern/{owner}/{project}") for project in projects]
-
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # 進捗バーの設定
-        pbar = tqdm(total=len(tasks), desc="Processing projects")
-
-        # 最初のバッチのタスクを開始
-        futures = {
-            executor.submit(process_project, file_path, output_path): (file_path, output_path)
-            for file_path, output_path in tasks[:max_workers]
-        }
-
-        while futures:
-            # 完了したタスクを処理
-            for future in as_completed(futures):
-                file_path, output_path = futures.pop(future)
-                try:
-                    result = future.result()
-                    pbar.update(1)
-                except Exception as e:
-                    print(f"Error processing project {file_path}: {e}")
-
-                # 新しいタスクがあれば追加
-                if tasks:
-                    new_file_path, new_output_path = tasks.pop(0)
-                    new_future = executor.submit(process_project, new_file_path, new_output_path)
-                    futures[new_future] = (new_file_path, new_output_path)
-
-        pbar.close()
-
-
 if __name__ == "__main__":
-    # main()
-    project = f"{path.INTERMEDIATE}/sample/vscode#87709.json"
-    out_path = f"{path.RESULTS}/sample/vscode#87709.json"
+    project = f"{path.INTERMEDIATE}/sample/flutter#50089.json"
+    out_path = f"{path.RESULTS}/sample/flutter#50089.json"
     process_project(project, out_path)
     print("end")
