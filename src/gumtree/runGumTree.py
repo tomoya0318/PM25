@@ -6,7 +6,7 @@ import uuid
 from dataclasses import dataclass, field
 
 from constants import path
-from utils.file_processor import remove_dir, dump_to_json
+from utils.file_processor import remove_dir
 
 
 @dataclass
