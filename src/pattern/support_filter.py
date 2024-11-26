@@ -8,15 +8,18 @@ from pattern.code2diff.source_preprocessor import variable_name_preprocessing
 from pattern.pattern_matcher import filter_patterns_by_support
 from tqdm import tqdm
 
+
 def _contains_plus_and_minus(pattern):
     contains_minus = any(token.startswith("-") for token in pattern)
     contains_plus = any(token.startswith("+") for token in pattern)
     return contains_minus and contains_plus
 
+
 def _is_subpattern(small_pattern, big_pattern):
     small = set(small_pattern)
     big = set(big_pattern)
     return small.issubset(big)
+
 
 def filter_patterns(patterns, patch_pairs, threshold=0.1):
     filtered_patterns = []
@@ -46,11 +49,7 @@ def filter_patterns(patterns, patch_pairs, threshold=0.1):
             if are_ast_equal(pattern_changed, consequent):
                 actually_changed += 1
 
-        confidence = (
-            actually_changed / triggerable_initial
-            if triggerable_initial > 0
-            else 0
-        )
+        confidence = actually_changed / triggerable_initial if triggerable_initial > 0 else 0
 
         if confidence < threshold:
             continue
@@ -58,6 +57,7 @@ def filter_patterns(patterns, patch_pairs, threshold=0.1):
         filtered_patterns.append({"pattern": pattern, "confidence": confidence})
 
     return filtered_patterns
+
 
 def process_single_project(project, pattern_path, test_path, output_path, min_support):
     print(f"Processing project: {project}")
@@ -78,7 +78,9 @@ def execute_parallel_single(projects_with_support, pattern_path, test_path, owne
         futures = []
         for project, min_support in projects_with_support.items():
             output_path = f"{path.INTERMEDIATE}/pattern/filtered/{owner}/two_{project}"
-            futures.append(executor.submit(process_single_project, project, pattern_path, test_path, output_path, min_support))
+            futures.append(
+                executor.submit(process_single_project, project, pattern_path, test_path, output_path, min_support)
+            )
 
         for future in as_completed(futures):
             try:
@@ -123,15 +125,16 @@ def prepare_data_path(owner):
     test_path = f"{path.INTERMEDIATE}/test_data/{owner}"
     return pattern_path, test_path
 
+
 if __name__ == "__main__":
     owner = "numpy"
     projects_with_support = {
         "numpy_numpy_Python_master.json": 2,
         "numpy_numpydoc_Python_master.json": 2,
-        "numpy_numpy-financial_Python_master.json": 2
+        "numpy_numpy-financial_Python_master.json": 2,
     }
     pattern_path, test_path = prepare_data_path(owner)
     execute_parallel_merge(projects_with_support, pattern_path, test_path)
 
-        # "numpy_numpy-financial_Python_master.json": 2,
-        # "numpy_numpydoc_Python_master.json": 2
+    # "numpy_numpy-financial_Python_master.json": 2,
+    # "numpy_numpydoc_Python_master.json": 2

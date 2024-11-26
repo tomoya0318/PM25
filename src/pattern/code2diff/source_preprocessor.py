@@ -4,6 +4,7 @@ import json
 from io import BytesIO
 from tqdm import tqdm
 from utils.file_processor import ensure_dir_exists
+from utils.lang_identifiyer import identify_lang_from_file
 
 
 def variable_name_preprocessing(code):
@@ -55,17 +56,18 @@ def extract_diff(file_path):
         file_path (str): データを含むJSONファイルへのパス
 
     Returns:
-        list: 各サブリストが[変更前, 変更後]のペアとなるリスト
+        list[(language: str, condition: str, consequent: str)]
     """
     with open(file_path, "r") as file:
         data = json.load(file)
 
     result = []
     for item in tqdm(data, leave=False):
+        language = identify_lang_from_file(item["File"])
         condition = item["condition"]
         consequent = item["consequent"]
         try:
-            result.append([condition[0], consequent[0]])
+            result.append([language, condition[0], consequent[0]])
         except IndexError:
             continue
     return result

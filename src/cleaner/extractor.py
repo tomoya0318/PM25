@@ -3,6 +3,7 @@ from tqdm import tqdm
 from utils.file_processor import load_from_json, list_files_in_directory, dump_to_json
 from constants import path
 
+
 def get_oldest_date(data):
     oldest_date = None
     for item in data:
@@ -10,6 +11,7 @@ def get_oldest_date(data):
         if oldest_date is None or created_at < oldest_date:
             oldest_date = created_at
     return oldest_date
+
 
 def extract_term_data(data, start_date, end_date):
     extract_data = []
@@ -20,10 +22,11 @@ def extract_term_data(data, start_date, end_date):
                 "author": item.get("author", ""),
                 "condition": item.get("condition", []),
                 "consequent": item.get("consequent", []),
-                "created_at": item.get("created_at", "")
+                "created_at": item.get("created_at", ""),
             }
             extract_data.append(extracted_item)
     return extract_data
+
 
 if __name__ == "__main__":
     owner = "numpy"

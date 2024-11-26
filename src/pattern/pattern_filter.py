@@ -15,17 +15,19 @@ def _contains_plus_and_minus(pattern):
     contains_plus = any(token.startswith("+") for token in pattern)
     return contains_minus and contains_plus
 
+
 def _is_subpattern(small_pattern, big_pattern):
     small = set(small_pattern)
     big = set(big_pattern)
     return small.issubset(big)
 
+
 def filter_pattern_chunk(pattern_chunk, sorted_patterns, patch_pairs, threshold):
     filtered_patterns = []
-    sorted_pattern_list = [item['pattern'] for item in sorted_patterns]
+    sorted_pattern_list = [item["pattern"] for item in sorted_patterns]
     for item in pattern_chunk:
-        pattern = item['pattern']
-        support = item['support']
+        pattern = item["pattern"]
+        support = item["support"]
         if not _contains_plus_and_minus(pattern):
             continue
 
@@ -53,11 +55,7 @@ def filter_pattern_chunk(pattern_chunk, sorted_patterns, patch_pairs, threshold)
             if are_ast_equal(pattern_changed, consequent):
                 actually_changed += 1
 
-        confidence = (
-            actually_changed / triggerable_initial
-            if triggerable_initial > 0
-            else 0
-        )
+        confidence = actually_changed / triggerable_initial if triggerable_initial > 0 else 0
 
         if confidence < threshold:
             continue
@@ -66,31 +64,37 @@ def filter_pattern_chunk(pattern_chunk, sorted_patterns, patch_pairs, threshold)
 
     return filtered_patterns
 
+
 def aggregate_patterns(filtered_patterns_chunks):
-    aggregated_patterns = defaultdict(lambda: {'confidences': [], 'support': 0})
+    aggregated_patterns = defaultdict(lambda: {"confidences": [], "support": 0})
     for chunk in filtered_patterns_chunks:
         for pattern_entry in chunk:
             pattern_str = str(pattern_entry["pattern"])
-            aggregated_patterns[pattern_str]['confidences'].append(pattern_entry["confidence"])
-            aggregated_patterns[pattern_str]['support'] += pattern_entry["support"]
+            aggregated_patterns[pattern_str]["confidences"].append(pattern_entry["confidence"])
+            aggregated_patterns[pattern_str]["support"] += pattern_entry["support"]
 
     # Aggregate confidence by averaging the summed confidence
     final_patterns = []
     for pattern, values in aggregated_patterns.items():
-        averaged_confidence = sum(values['confidences']) / len(values['confidences'])
-        final_patterns.append({"pattern": eval(pattern), "confidence": averaged_confidence, "support": values['support']})
+        averaged_confidence = sum(values["confidences"]) / len(values["confidences"])
+        final_patterns.append(
+            {"pattern": eval(pattern), "confidence": averaged_confidence, "support": values["support"]}
+        )
 
     return final_patterns
 
 
 def filter_patterns(data, patch_pairs, threshold=0.1, max_workers=20):
-    sorted_data = sorted(data, key=lambda x: -len(x['pattern']))
+    sorted_data = sorted(data, key=lambda x: -len(x["pattern"]))
     chunk_size = math.ceil(len(sorted_data) / max_workers)
-    pattern_chunks = [sorted_data[i:i + chunk_size] for i in range(0, len(sorted_data), chunk_size)]
+    pattern_chunks = [sorted_data[i : i + chunk_size] for i in range(0, len(sorted_data), chunk_size)]
 
     filtered_patterns_chunks = []
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(filter_pattern_chunk, chunk, sorted_data, patch_pairs, threshold) for chunk in pattern_chunks]
+        futures = [
+            executor.submit(filter_pattern_chunk, chunk, sorted_data, patch_pairs, threshold)
+            for chunk in pattern_chunks
+        ]
         for future in tqdm(as_completed(futures), total=len(futures), desc="Overall progress"):
             try:
                 filtered_patterns_chunks.append(future.result())
@@ -98,6 +102,7 @@ def filter_patterns(data, patch_pairs, threshold=0.1, max_workers=20):
                 print(f"Error processing chunk: {e}")
 
     return aggregate_patterns(filtered_patterns_chunks)
+
 
 def process_single_project(project, pattern_path, test_path, output_path):
     print(f"Processing project: {project}")
@@ -108,6 +113,7 @@ def process_single_project(project, pattern_path, test_path, output_path):
         dump_to_json(filtered_patterns, output_path)
     except Exception as e:
         print(f"Error processing project {project}: {e}")
+
 
 def execute_parallel_single(projects, pattern_path, test_path, owner):
     with ProcessPoolExecutor(max_workers=4) as executor:
@@ -122,6 +128,7 @@ def execute_parallel_single(projects, pattern_path, test_path, owner):
             except Exception as e:
                 print(f"Error processing project: {e}")
 
+
 def process_merge_project(project, merge_data, test_path, output_path):
     print(f"Processing project: {project}")
     try:
@@ -130,6 +137,7 @@ def process_merge_project(project, merge_data, test_path, output_path):
         dump_to_json(filtered_patterns, output_path)
     except Exception as e:
         print(f"Error processing project {project}: {e}")
+
 
 def execute_parallel_merge(projects, pattern_path, test_path, owner):
     merge_data = []
@@ -141,7 +149,9 @@ def execute_parallel_merge(projects, pattern_path, test_path, owner):
     with ProcessPoolExecutor(max_workers=4) as executor:
         futures = []
         for project in projects:
-            output_path = f"{path.INTERMEDIATE}/pattern/filtered/{owner}/merged_{projects_name[0]}_{projects_name[1]}_{project}"
+            output_path = (
+                f"{path.INTERMEDIATE}/pattern/filtered/{owner}/merged_{projects_name[0]}_{projects_name[1]}_{project}"
+            )
             futures.append(executor.submit(process_merge_project, project, merge_data, test_path, output_path))
 
         for future in as_completed(futures):
@@ -150,18 +160,17 @@ def execute_parallel_merge(projects, pattern_path, test_path, owner):
             except Exception as e:
                 print(f"Error processing project: {e}")
 
+
 def prepare_data_path(owner):
     pattern_path = f"{path.INTERMEDIATE}/pattern/{owner}"
     test_path = f"{path.INTERMEDIATE}/test_data/ten_{owner}"
     return pattern_path, test_path
 
+
 if __name__ == "__main__":
     owner = "numpy"
 
-    projects = [
-        "numpy_numpy_Python_master.json",
-        "numpy_numpy-refactor_Python_master.json"
-    ]
+    projects = ["numpy_numpy_Python_master.json", "numpy_numpy-refactor_Python_master.json"]
     pattern_path, test_path = prepare_data_path(owner)
     # execute_parallel_single(projects, pattern_path, test_path, owner)
     execute_parallel_merge(projects, pattern_path, test_path, owner)

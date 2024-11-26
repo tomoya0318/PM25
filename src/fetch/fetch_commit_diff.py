@@ -1,78 +1,161 @@
 import os
 from git import Repo
 from constants import path
-from utils.file_processor import ensure_dir_exists, dump_to_json
-
+from utils.file_processor import ensure_dir_exists, dump_to_json, get_filename
+from models.diff import FileDiff, DiffHunk
 
 def clone_project(url: str) -> Repo | str:
-    dir_path = f"{path.TMP}/vscode"
+    dir_path = f"{path.TMP}/{get_filename(url)}"
     ensure_dir_exists(dir_path)
     try:
         if os.path.exists(dir_path):
             repo = Repo(dir_path)
-            print(f"project already exist")
+            print("project already exists, updating...")
         else:
-            repo = Repo.clone_from(url, dir_path)
-            print(f"cloned from {url}")
+            print(f"Cloning from {url}...")
+            # 完全な履歴でクローン
+            repo = Repo.clone_from(url, dir_path, no_single_branch=True)
+            print("Clone completed")
         return repo
     except Exception as e:
         return f"エラーが発生しました: {str(e)}"
 
-
 def get_hash_diff(repo: Repo, commit_hash: str) -> str:
     try:
+        # まず、指定されたコミットハッシュの取得を試みる
+        try:
+            repo.remote().fetch(f'+refs/heads/*:refs/remotes/origin/*')
+            repo.git.fetch('origin', commit_hash)
+            print(f"Successfully fetched commit {commit_hash}")
+        except Exception as e:
+            print(f"Fetch commit failed: {str(e)}")
+
         commit = repo.commit(commit_hash)
+        if not commit.parents:
+            return f"エラーが発生しました: Commit {commit_hash} has no parent commit"
+
         parent = commit.parents[0]
-        diff = parent.diff(commit, create_patch=True)  # create_patch=True を追加
+        try:
+            diff = parent.diff(commit, create_patch=True)
 
-        diff_output = ""
-        for d in diff:
-            diff_output += f"File: {d.a_path}\n"
-            diff_output += d.diff.decode('utf-8')
-            diff_output += "\n\n"
-        return diff_output
+            diff_output = ""
+            for d in diff:
+                diff_output += f"File: {d.a_path}\n"
+                diff_output += d.diff.decode("utf-8")
+                diff_output += "\n\n"
+            return diff_output
+
+        except Exception as e:
+            return f"エラーが発生しました: Failed to generate diff - {str(e)}"
+
     except Exception as e:
-        return f"エラーが発生しました: {str(e)}"
+        return f"エラーが発生しました: Failed to find commit {commit_hash} - {str(e)}"
 
 
-def parse_diff(diff: str):
-    result: list[dict[str, str]] = []
-    file_name: str = ""
+# def get_hash_diff_from_pullrequest(repo: Repo, first_commit_hash:str, last_commit_hash:str):
+
+# def parse_diff(diff: str) -> list[FileDiff]:
+#     result: list[FileDiff] = []
+#     current_file: str | None = None
+#     current_hunk: DiffHunk | None = None
+
+#     for line in diff.strip().split("\n"):
+#         line = line.strip()
+#         if not line:
+#             continue
+
+#         if line.startswith("File:"):
+#             # 新しいファイルの処理開始時に前のhunkを保存
+#             if current_file and current_hunk:
+#                 if not result or result[-1].file_name != current_file:
+#                     result.append(FileDiff(current_file, []))
+#                 result[-1].hunks.append(current_hunk)
+
+#             current_file = line.split("File:", 1)[-1].strip()
+#             current_hunk = DiffHunk([], [])
+
+#         elif line.startswith("-") and current_hunk is not None:
+#             current_hunk.condition.append(line[1:].strip())
+
+#         elif line.startswith("+") and current_hunk is not None:
+#             current_hunk.consequent.append(line[1:].strip())
+
+#         elif current_hunk and (current_hunk.condition or current_hunk.consequent):
+#             # 非diff行が来た時に現在のhunkを保存し新しいhunkを準備
+#             if current_file:
+#                 if not result or result[-1].file_name != current_file:
+#                     result.append(FileDiff(current_file, []))
+#                 result[-1].hunks.append(current_hunk)
+#             current_hunk = DiffHunk([], [])
+
+#     # 最後のhunkを保存
+#     if current_file and current_hunk and (current_hunk.condition or current_hunk.consequent):
+#         if not result or result[-1].file_name != current_file:
+#             result.append(FileDiff(current_file, []))
+#         result[-1].hunks.append(current_hunk)
+
+#     return result
+
+def parse_diff(diff: str) -> list[dict[str, str | list]]:
+    result: list[dict[str, str | list]] = []
+    current_file: str | None = None
+    current_hunk: DiffHunk | None = None
     lines = diff.split('\n')
-    for i, line in enumerate(lines):
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         if line.startswith("File:"):
-            file_name = line.split("File:", 1)[-1]
-        if line.startswith("-"):
-            for plus_line in lines[i + 1:]:
-                if plus_line.startswith("+"):
-                    result.append({
-                        "File": file_name,
-                        "cosequent": line[1:],
-                        "condition": plus_line[1:]
-                    })
+            current_file = line.split("File:", 1)[-1]
+            current_hunk = DiffHunk([], [])
+            i += 1
+            continue
+        if current_file is not None and current_hunk is not None and line.startswith("-"):
+            current_hunk.condition.append(line[1:].strip())
+            i += 1
+            while i < len(lines):
+                next_line = lines[i]
+                if next_line.startswith("-"):
+                    current_hunk.condition.append(next_line[1:].strip())
+                    i += 1
+                    continue
+                if next_line.startswith("+"):
+                    current_hunk.consequent.append(next_line[1:].strip())
+                    i += 1
+                    continue
+                result.append({
+                    "File": current_file,
+                    "condition": current_hunk.condition,
+                    "consequnet": current_hunk.consequent
+                })
+                current_hunk = DiffHunk([], [])
                 break
+            continue
+        i += 1
 
     return result
 
+
 def save_diff_to_file(diff_content, output_file):
     try:
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(diff_content)
         print(f"Diff content saved to {output_file}")
     except Exception as e:
         print(f"ファイルの保存中にエラーが発生しました: {str(e)}")
 
-
 if __name__ == "__main__":
-    repo_url = "https://github.com/microsoft/vscode.git"
-    commit_hash = "3f6ca9427914002d51c4ca6ad48f29e47cc60529"
-    output_file = f"{path.RESULTS}/diff.json"
+    repo_url = "https://github.com/facebook/react-native.git"
+    commit_hash = "e9150befa953dce17e2b9ca273082c2f502a3e0c"
+    output_file = f"{path.INTERMEDIATE}/sample/react-native#27850.json"
+
     repo = clone_project(repo_url)
     if isinstance(repo, Repo):
+        print("Repository operations completed")
         diff = get_hash_diff(repo, commit_hash)
         if not diff.startswith("エラーが発生しました"):
-            result = parse_diff(diff)
-            dump_to_json(result, output_file)
+            hunk_diff = parse_diff(diff)
+            dump_to_json(hunk_diff, output_file)
+            print(f"Successfully separate diff to {output_file}")
         else:
             print(diff)
     else:
