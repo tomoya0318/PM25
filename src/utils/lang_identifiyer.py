@@ -15,6 +15,6 @@ def identify_lang_from_file(file_path: str):
     }
 
     if extension not in lang_map:
-        return {"error": "Unsupported file extension"}
+        raise ValueError(f"Unsupported file extension: {extension}")
 
     return lang_map[extension]
