@@ -4,6 +4,7 @@ from constants import path
 from utils.file_processor import ensure_dir_exists, dump_to_json, get_filename
 from models.diff import FileDiff, DiffHunk
 
+
 def clone_project(url: str) -> Repo | str:
     dir_path = f"{path.TMP}/{get_filename(url)}"
     ensure_dir_exists(dir_path)
@@ -20,12 +21,13 @@ def clone_project(url: str) -> Repo | str:
     except Exception as e:
         return f"エラーが発生しました: {str(e)}"
 
+
 def get_hash_diff(repo: Repo, commit_hash: str) -> str:
     try:
         # まず、指定されたコミットハッシュの取得を試みる
         try:
-            repo.remote().fetch(f'+refs/heads/*:refs/remotes/origin/*')
-            repo.git.fetch('origin', commit_hash)
+            repo.remote().fetch(f"+refs/heads/*:refs/remotes/origin/*")
+            repo.git.fetch("origin", commit_hash)
             print(f"Successfully fetched commit {commit_hash}")
         except Exception as e:
             print(f"Fetch commit failed: {str(e)}")
@@ -96,11 +98,12 @@ def get_hash_diff(repo: Repo, commit_hash: str) -> str:
 
 #     return result
 
+
 def parse_diff(diff: str) -> list[dict[str, str | list]]:
     result: list[dict[str, str | list]] = []
     current_file: str | None = None
     current_hunk: DiffHunk | None = None
-    lines = diff.split('\n')
+    lines = diff.split("\n")
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -122,11 +125,9 @@ def parse_diff(diff: str) -> list[dict[str, str | list]]:
                     current_hunk.consequent.append(next_line[1:].strip())
                     i += 1
                     continue
-                result.append({
-                    "File": current_file,
-                    "condition": current_hunk.condition,
-                    "consequnet": current_hunk.consequent
-                })
+                result.append(
+                    {"File": current_file, "condition": current_hunk.condition, "consequnet": current_hunk.consequent}
+                )
                 current_hunk = DiffHunk([], [])
                 break
             continue
@@ -142,6 +143,7 @@ def save_diff_to_file(diff_content, output_file):
         print(f"Diff content saved to {output_file}")
     except Exception as e:
         print(f"ファイルの保存中にエラーが発生しました: {str(e)}")
+
 
 if __name__ == "__main__":
     repo_url = "https://github.com/facebook/react-native.git"

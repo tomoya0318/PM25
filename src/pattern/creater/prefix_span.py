@@ -83,11 +83,7 @@ def process_patch_pairs(patch_data):
     patterns = prefix_span.fit(sequences)
 
     # 2つ以上のトークンで構成されたパターンのみをフィルタリング
-    filtered_patterns = [
-        (pattern, support)
-        for pattern, support in patterns
-        if is_valid_pattern(pattern)
-    ]
+    filtered_patterns = [(pattern, support) for pattern, support in patterns if is_valid_pattern(pattern)]
 
     return filtered_patterns
 
@@ -98,7 +94,7 @@ def is_valid_pattern(pattern):
 
     has_diff_token = False
     for token in pattern:
-        if token.startswith('-') or token.startswith('+'):
+        if token.startswith("-") or token.startswith("+"):
             has_diff_token = True
             break
 

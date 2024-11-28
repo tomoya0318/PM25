@@ -14,6 +14,7 @@ class Match:
     src: str
     dest: str
 
+
 @dataclass
 class Action:
     action: str
@@ -21,6 +22,7 @@ class Action:
     parent: str | None
     at: int | None
     label: str | None
+
 
 @dataclass
 class GumTreeResponse:
@@ -37,7 +39,7 @@ def run_GumTree(src_code: str, dest_code: str):
     except OSError as e:
         print(f"Filed to create directory")
 
-    #一旦pythonのみ対応，のちに多言語？
+    # 一旦pythonのみ対応，のちに多言語？
     src_path = os.path.join(TMP_DIR, "src.py")
     with open(src_path, "w", encoding="utf-8") as f:
         f.write(src_code)
@@ -45,30 +47,30 @@ def run_GumTree(src_code: str, dest_code: str):
     with open(dest_path, "w", encoding="utf-8") as f:
         f.write(dest_code)
 
-    #dockerコンテナ立ち上げ用
+    # dockerコンテナ立ち上げ用
     command = [
-        "docker", "run",
+        "docker",
+        "run",
         "--rm",
-        "-v", f"{TMP_DIR}:/tmp/{id}",
+        "-v",
+        f"{TMP_DIR}:/tmp/{id}",
         "tomoya0318/gumtree",
-        "gumtree", "textdiff", "-f", "JSON",
+        "gumtree",
+        "textdiff",
+        "-f",
+        "JSON",
         f"/tmp/{id}/src.py",
-        f"/tmp/{id}/dest.py"
+        f"/tmp/{id}/dest.py",
     ]
 
     try:
-        output = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=True
-        )
+        output = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         response = json.loads(output.stdout)
         remove_dir(TMP_DIR)
         return json.dumps(response, indent=2)
     except subprocess.CalledProcessError as e:
         print(f"Error {e.stderr}")
+
 
 if __name__ == "__main__":
     condition = "cts.cancel()\ncts.dispose()"
