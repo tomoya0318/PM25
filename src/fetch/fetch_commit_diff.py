@@ -2,7 +2,7 @@ import os
 from git import Repo
 from constants import path
 from utils.file_processor import ensure_dir_exists, dump_to_json, get_filename
-from models.diff import FileDiff, DiffHunk
+from models.diff import DiffHunk
 
 
 def clone_project(url: str) -> Repo | str:
@@ -52,51 +52,6 @@ def get_hash_diff(repo: Repo, commit_hash: str) -> str:
 
     except Exception as e:
         return f"エラーが発生しました: Failed to find commit {commit_hash} - {str(e)}"
-
-
-# def get_hash_diff_from_pullrequest(repo: Repo, first_commit_hash:str, last_commit_hash:str):
-
-# def parse_diff(diff: str) -> list[FileDiff]:
-#     result: list[FileDiff] = []
-#     current_file: str | None = None
-#     current_hunk: DiffHunk | None = None
-
-#     for line in diff.strip().split("\n"):
-#         line = line.strip()
-#         if not line:
-#             continue
-
-#         if line.startswith("File:"):
-#             # 新しいファイルの処理開始時に前のhunkを保存
-#             if current_file and current_hunk:
-#                 if not result or result[-1].file_name != current_file:
-#                     result.append(FileDiff(current_file, []))
-#                 result[-1].hunks.append(current_hunk)
-
-#             current_file = line.split("File:", 1)[-1].strip()
-#             current_hunk = DiffHunk([], [])
-
-#         elif line.startswith("-") and current_hunk is not None:
-#             current_hunk.condition.append(line[1:].strip())
-
-#         elif line.startswith("+") and current_hunk is not None:
-#             current_hunk.consequent.append(line[1:].strip())
-
-#         elif current_hunk and (current_hunk.condition or current_hunk.consequent):
-#             # 非diff行が来た時に現在のhunkを保存し新しいhunkを準備
-#             if current_file:
-#                 if not result or result[-1].file_name != current_file:
-#                     result.append(FileDiff(current_file, []))
-#                 result[-1].hunks.append(current_hunk)
-#             current_hunk = DiffHunk([], [])
-
-#     # 最後のhunkを保存
-#     if current_file and current_hunk and (current_hunk.condition or current_hunk.consequent):
-#         if not result or result[-1].file_name != current_file:
-#             result.append(FileDiff(current_file, []))
-#         result[-1].hunks.append(current_hunk)
-
-#     return result
 
 
 def parse_diff(diff: str) -> list[dict[str, str | list]]:
