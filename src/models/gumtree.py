@@ -15,7 +15,7 @@ class Action:
     tree: str
     parent: str | None = None
     at: int | None = None
-    label: str | None =None
+    label: str | None = None
 
 
 @dataclass
