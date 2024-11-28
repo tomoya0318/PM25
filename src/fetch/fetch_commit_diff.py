@@ -81,7 +81,7 @@ def parse_diff(diff: str) -> list[dict[str, str | list]]:
                     i += 1
                     continue
                 result.append(
-                    {"File": current_file, "condition": current_hunk.condition, "consequnet": current_hunk.consequent}
+                    {"File": current_file, "condition": current_hunk.condition, "consequent": current_hunk.consequent}
                 )
                 current_hunk = DiffHunk([], [])
                 break
@@ -101,9 +101,9 @@ def save_diff_to_file(diff_content, output_file):
 
 
 if __name__ == "__main__":
-    repo_url = "https://github.com/facebook/react-native.git"
-    commit_hash = "e9150befa953dce17e2b9ca273082c2f502a3e0c"
-    output_file = f"{path.INTERMEDIATE}/sample/react-native#27850.json"
+    repo_url = "https://github.com/microsoft/vscode.git"
+    commit_hash = "9af5cd1f81528eac10adb3c1e89097fe4233e9d4"
+    output_file = f"{path.INTERMEDIATE}/sample/vscode#88117.json"
 
     repo = clone_project(repo_url)
     if isinstance(repo, Repo):
