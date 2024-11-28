@@ -1,8 +1,9 @@
-from models.diff import DiffHunk
 from models.gumtree import Action, UpdateChange
 
 
-def extract_update_code_changes(condition: list, consequent: list, actions: list[Action]) -> list[UpdateChange]:
+def extract_update_code_changes(
+    condition: list[str], consequent: list[str], actions: list[Action]
+) -> list[UpdateChange]:
     """update-nodeのアクションに対応する行全体を変更前後のコードから抽出する
 
     Args:
@@ -30,48 +31,32 @@ def extract_update_code_changes(condition: list, consequent: list, actions: list
         if action.action == "update-node":
             # ツリー情報から位置情報を抽出
             tree_info = action.tree
-            pos_str = tree_info[tree_info.rfind("[") + 1:tree_info.rfind("]")]
+            pos_str = tree_info[tree_info.rfind("[") + 1 : tree_info.rfind("]")]
             start, _ = map(int, pos_str.split(","))
 
             # 該当する行を見つける
             for i, line_start in enumerate(condition_positions):
-                next_line_start = condition_positions[i + 1] if i + 1 < len(condition_positions) else len(''.join(condition))
+                next_line_start = (
+                    condition_positions[i + 1] if i + 1 < len(condition_positions) else len("".join(condition))
+                )
                 if line_start <= start < next_line_start:
                     before_line = condition[i]
                     after_line = consequent[i]
-                    update_changes.append(UpdateChange(
-                        before=before_line,
-                        after=after_line
-                    ))
+                    update_changes.append(UpdateChange(before=before_line, after=after_line))
                     break
 
     return update_changes
 
+
 # 使用例
 if __name__ == "__main__":
-    condition = [
-        "ASSERT_EQ(expected, actual);",
-        "ASSERT_EQ(expected2, actual2);",
-        "ASSERT_EQ(expected3, actual3);"
-    ]
+    condition = ["ASSERT_EQ(expected, actual);", "ASSERT_EQ(expected2, actual2);", "ASSERT_EQ(expected3, actual3);"]
 
-    consequent = [
-        "EXPECT_EQ(expected, actual);",
-        "EXPECT_EQ(expected2, actual2);",
-        "EXPECT_EQ(expected3, actual3);"
-    ]
+    consequent = ["EXPECT_EQ(expected, actual);", "EXPECT_EQ(expected2, actual2);", "EXPECT_EQ(expected3, actual3);"]
 
     actions = [
-        Action(
-        action="update-node",
-        tree="identifier: ASSERT_EQ [0,9]",
-        label="EXPECT_EQ"
-        ),
-        Action(
-        action="update-node",
-        tree="identifier: ASSERT_EQ [61,70]",
-        label="EXPECT_EQ"
-        )
+        Action(action="update-node", tree="identifier: ASSERT_EQ [0,9]", label="EXPECT_EQ"),
+        Action(action="update-node", tree="identifier: ASSERT_EQ [61,70]", label="EXPECT_EQ"),
     ]
     changes = extract_update_code_changes(condition, consequent, actions)
     for change in changes:
