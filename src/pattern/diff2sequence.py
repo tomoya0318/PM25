@@ -4,6 +4,7 @@ import tokenize
 from codetokenizer.tokenizer import TokeNizer
 from constants import path
 from exception import TokenizationError
+from abstractor.abstraction import abstract_code
 from gumtree.extractor import extract_update_code_changes
 from gumtree.runner import GumTreeResponse, run_GumTree
 from models.diff import DiffHunk
@@ -34,13 +35,19 @@ def extract_diff(file_path: str) -> list[tuple[str, DiffHunk]]:
             condition = item["condition"]
             consequent = item["consequent"]
 
-            if len(condition) != len(consequent) or len(condition) == 1:
-                result.append([language, DiffHunk(condition, consequent)])
+            abstracted_diff = abstract_code(DiffHunk(condition, consequent))
+            if (
+                len(abstracted_diff.condition) != len(abstracted_diff.consequent)
+                or len(abstracted_diff.condition) == 1
+            ):
+                result.append([language, DiffHunk(abstracted_diff.condition, abstracted_diff.consequent)])
                 continue
 
             else:
-                response: GumTreeResponse = run_GumTree(condition, consequent)
-                changes: list[UpdateChange] = extract_update_code_changes(condition, consequent, response.actions)
+                response: GumTreeResponse = run_GumTree(abstracted_diff.condition, abstracted_diff.consequent)
+                changes: list[UpdateChange] = extract_update_code_changes(
+                    abstracted_diff.condition, abstracted_diff.consequent, response.actions
+                )
                 for change in changes:
                     result.append([language, DiffHunk(condition=[change.before], consequent=[change.after])])
                 continue
@@ -120,4 +127,3 @@ if __name__ == "__main__":
     for lang, diff_hunk in diffs:
         token_diff = compute_token_diff(lang, diff_hunk)
         print(token_diff)
-
