@@ -14,7 +14,7 @@ def run_GumTree(src_code: list, dest_code: list) -> GumTreeResponse:
 
     try:
         os.makedirs(TMP_DIR, exist_ok=True)
-        print(f"Directory '{TMP_DIR}' created or already exists.")
+        print(f"Directory '{TMP_DIR}' created")
 
         # 一旦pythonのみ対応，のちに多言語？
         src_path = os.path.join(TMP_DIR, "src.py")
