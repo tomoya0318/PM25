@@ -7,5 +7,5 @@ ROOT = Path(__file__).parents[2]
 DATA = ROOT / "data"
 RESOURCE = DATA / "resources"
 INTERMEDIATE = DATA / "out" / "intermediate"
-RESULT = DATA / "out" / "results"
+RESULTS = DATA / "out" / "results"
 TMP = ROOT / "tmp"

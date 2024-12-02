@@ -1,10 +1,10 @@
 import difflib
 import tokenize
 
+from abstractor.abstraction import abstract_code
 from codetokenizer.tokenizer import TokeNizer
 from constants import path
 from exception import TokenizationError
-from abstractor.abstraction import abstract_code
 from gumtree.extractor import extract_update_code_changes
 from gumtree.runner import GumTreeResponse, run_GumTree
 from models.diff import DiffHunk
