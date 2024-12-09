@@ -7,3 +7,12 @@ class DiffHunk:
 
     condition: list[str]
     consequent: list[str]
+
+
+@dataclass
+class DiffData:
+    file_name: str
+    pr_number: int
+    base_hash: str
+    target_hash: str
+    diff_hunk: DiffHunk
