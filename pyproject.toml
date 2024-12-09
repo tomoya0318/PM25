@@ -4,10 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["tomoya-n <s266227@wakayama-u.ac.jp>"]
 readme = "README.md"
-packages = [
-    { include = "pattern", from = "src" },
-    { include = "developer", from = "src" }
-]
+packages = [{ include = "*", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -25,6 +22,7 @@ seaborn = "^0.13.2"
 matplotlib = "^3.9.0"
 gitpython = "^3.1.43"
 codetokenizer = {path = "/Users/tomoya-n/dev/PM25/dist/codetokenizer-0.1.0.tar.gz"}
+requests = "^2.32.3"
 
 [build-system]
 requires = ["poetry-core"]
