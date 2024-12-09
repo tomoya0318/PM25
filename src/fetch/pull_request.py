@@ -1,12 +1,10 @@
 from git import DiffIndex, Repo, GitCommandError
-import json
 import os
 import time
 
 from dotenv import load_dotenv
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Generator
-from pathlib import Path
 import requests
 
 from constants import path
