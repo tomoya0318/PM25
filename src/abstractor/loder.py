@@ -20,20 +20,31 @@ class IdentifierDict:
         # 基本的なメソッド名セット
         basic_methods = {
             # オブジェクト関連
-            "__init__", "__str__", "__repr__",
+            "__init__",
+            "__str__",
+            "__repr__",
             # データ構造操作
-            "append", "extend", "pop", "clear", "update",
+            "append",
+            "extend",
+            "pop",
+            "clear",
+            "update",
             # リソース管理
-            "dispose", "cancel", "close",
+            "dispose",
+            "cancel",
+            "close",
             # その他一般的なメソッド
-            "get", "set", "validate", "check"
+            "get",
+            "set",
+            "validate",
+            "check",
         }
         self.method_names.update(basic_methods)
 
     def _load_additional_methods(self, dict_path: Path):
         """追加のメソッド名を読み込む"""
         try:
-            with open(dict_path, 'r') as f:
+            with open(dict_path, "r") as f:
                 additional_methods = set(json.load(f))
                 self.method_names.update(additional_methods)
         except FileNotFoundError:

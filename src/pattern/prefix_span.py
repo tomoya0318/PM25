@@ -71,13 +71,18 @@ def process_patch_pairs(patch_data):
     patterns = prefix_span.fit(sequences)
 
     # 2つ以上のトークンで構成されたパターンのみをフィルタリング
+    # merged_patterns = [(merge_consecutive_tokens(pattern), support) for pattern, support in patterns]
+    # filtered_patterns = [(pattern, support) for pattern, support in merged_patterns if _has_change_pattern(pattern)]
     filtered_patterns = [(pattern, support) for pattern, support in patterns if _has_change_pattern(pattern)]
-    merged_patterns = [(merge_consecutive_tokens(pattern), support) for pattern, support in filtered_patterns]
-    return merged_patterns
+    return filtered_patterns
 
 
 def _has_change_pattern(pattern: list[str]) -> bool:
     is_change = False
+
+    if len(pattern) <= 1:
+        return is_change
+
     for token in pattern:
         if token.startswith("+") or token.startswith("-"):
             is_change = True
