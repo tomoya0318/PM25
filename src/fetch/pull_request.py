@@ -1,6 +1,7 @@
 from git import DiffIndex, Repo, GitCommandError
 import os
 import time
+from datetime import datetime
 
 from dotenv import load_dotenv
 from dataclasses import dataclass
@@ -21,13 +22,16 @@ class ParsedDiff:
 
 
 class GitHubPRAnalyzer:
-    def __init__(self, token):
+    def __init__(self, token, start_date, end_date):
         self.headers = {"Authorization": f"token {token}"}
         self.base_url = "https://api.github.com"
+        self.start_date = start_date
+        self.end_date = end_date
 
     def clone_project(self, owner: str, repo: str) -> Repo:
         dir_path = path.TMP / repo
         url = f"https://github.com/{owner}/{repo}.git"
+        print(f"cloning from {url}")
         try:
             if dir_path.exists():
                 repo_data = Repo(dir_path)
@@ -49,18 +53,25 @@ class GitHubPRAnalyzer:
         if response.status_code == 403:
             reset_time = int(response.headers.get("X-RateLimit-Reset", time.time()))
             wait_time = max(0, reset_time - time.time())
-            raise GitHubAPIError(f"Rate limit reached. Wait for {wait_time:.2f} seconds.")
+            print(f"Rate limit reached. Wait for {wait_time:.2f} seconds.")
+            time.sleep(wait_time)  # wait_time秒だけ待機
+            return self._make_request(url, params)
         elif response.status_code != 200:
             raise GitHubAPIError(f"API request failed {response.text}")
 
         return response.json()
 
-    def _yield_pulls_data(self, owner: str, repo: str, state: str = "all") -> Generator[dict, None, None]:
+    def _yield_pulls_data(
+        self,
+        owner: str,
+        repo: str,
+        state: str = "all",
+    ) -> Generator[dict, None, None]:
         page = 1
         per_page = 100
         while True:
             url = f"{self.base_url}/repos/{owner}/{repo}/pulls"
-            params = {"state": state, "page": page, "per_page": per_page}
+            params = {"state": state, "page": page, "per_page": per_page, "sort": "updated", "direction": "desc"}
             print(f"fetching from {url}, page: {page}")
             prs = self._make_request(url, params)
 
@@ -68,8 +79,16 @@ class GitHubPRAnalyzer:
                 break
 
             for pr in prs:
+                pr_updated_at = datetime.strptime(pr["updated_at"], "%Y-%m-%dT%H:%M:%SZ")
+
+                # 終了日が指定されていて、PRの更新日が終了日より後の場合はスキップ
+                if self.end_date and pr_updated_at > self.end_date:
+                    continue
+
+                # 開始日が指定されていて、PRの更新日が開始日より前の場合は全ての取得を終了
+                if self.start_date and pr_updated_at < self.start_date:
+                    return
                 yield pr
-            break
             page += 1
 
     def _yield_merged_prs_number(self, owner: str, repo: str) -> Generator[int, None, None]:
@@ -94,6 +113,9 @@ class GitHubPRAnalyzer:
                         condition.append(line[1:].strip())
                     elif line.startswith("+"):
                         consequent.append(line[1:].strip())
+
+                if not condition or not consequent:
+                    continue
                 diff_data.append(ParsedDiff(d.a_path, condition, consequent))
             except Exception as e:
                 print(f"Failed to generate diff: {str(e)}")
@@ -111,6 +133,10 @@ class GitHubPRAnalyzer:
         diff: DiffIndex = base_commit.diff(target_commit, create_patch=True)
         return self._parse_diff(diff)
 
+    def _fetch_pr_details(self, owner: str, repo: str, pr_number: int) -> dict:
+        url = f"{self.base_url}/repos/{owner}/{repo}/pulls/{pr_number}"
+        return self._make_request(url)
+
     def get_all_pr_commit_diff(self, owner: str, repo: str) -> list[DiffData]:
         """全てのマージ済みPRのコミットハッシュを取得"""
         repo_data: Repo = self.clone_project(owner, repo)
@@ -118,11 +144,19 @@ class GitHubPRAnalyzer:
 
         for pr_number in self._yield_merged_prs_number(owner, repo):
             try:
+                print(f"fetching PR #{pr_number} details...")
+                pr_details = self._fetch_pr_details(owner, repo, pr_number)
+
+                print(f"getting commit hashes from PR #{pr_number}")
                 commits = self.get_pr_commit_hashes(owner, repo, pr_number)
                 # PRの最初と最後のコミットの差分取得（レビュワーの意思反映のため）
-                if len(commits) == 1:
+                if len(commits) <= 1:
                     continue
+
+                print(f"getting diffs...")
                 diffs = self._get_commit_diff(repo_data, commits[0], commits[-1])
+
+                merged_date = datetime.strptime(pr_details["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
                 for diff in diffs:
                     diff_data.append(
                         DiffData(
@@ -131,14 +165,22 @@ class GitHubPRAnalyzer:
                             base_hash=commits[0],
                             target_hash=commits[-1],
                             diff_hunk=DiffHunk(diff.condition, diff.consequent),
+                            merged_date=merged_date
                         )
                     )
 
+                # 成功したPRデータを保存する
+                output_path = path.RESOURCE / owner / f"{repo}.json"
+                Dh.dump_to_json(diff_data, output_path, owner, repo)
+
             except GitHubAPIError as e:
                 print(f"Error fetching commits for PR #{pr_number}: {str(e)}")
+                # エラーが発生した場合でも、それまでのデータは保存する
+                output_path = path.RESOURCE / owner / f"{repo}.json"
+                Dh.dump_to_json(diff_data, output_path, owner, repo)
                 continue
 
-            time.sleep(0.1)
+            time.sleep(0.5)
 
         return diff_data
 
@@ -146,12 +188,16 @@ class GitHubPRAnalyzer:
 if __name__ == "__main__":
     owner = "numpy"
     repo = "numpy"
-    output_path = path.INTERMEDIATE / "sample" / f"{repo}.json"
+    output_path = path.RESOURCE / owner / f"{repo}.json"
     load_dotenv()
     token = os.getenv("GITHUB_TOKEN")
-    analyzer = GitHubPRAnalyzer(token)
+    # 期間を指定
+    start_date = datetime(2021, 1, 1)
+    end_date = datetime(2024, 1, 1)
+    analyzer = GitHubPRAnalyzer(token, start_date, end_date)
     Dh = DiffDataHandler
 
+    # print(analyzer.get_pr_commit_hashes(owner, repo, 20643)[0])
     # 全てのマージ済みPRのコミットハッシュを取得
-    pr_commits = analyzer.get_all_pr_commit_diff(owner, repo)
-    Dh.dump_to_json(pr_commits, output_path, owner, repo)
+    analyzer.get_all_pr_commit_diff(owner, repo)
+    # Dh.dump_to_json(pr_commits, output_path, owner, repo)
