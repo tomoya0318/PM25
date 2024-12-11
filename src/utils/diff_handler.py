@@ -1,21 +1,22 @@
 import json
+from datetime import datetime
 
 from dataclasses import asdict
 from pathlib import Path
+from typing import Generator
 
 from models.diff import DiffData, DiffHunk
 
 
 class DiffDataHandler:
     @staticmethod
-    def load_from_json(file_path: Path) -> list[DiffData]:
+    def load_from_json(file_path: Path) -> Generator[DiffData, None, None]:
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            diff_data_list = []
             for diff in data["diffs"]:
                 # DiffHunkの作成
                 diff_hunk = DiffHunk(
@@ -29,10 +30,9 @@ class DiffDataHandler:
                     base_hash=diff["base_hash"],
                     target_hash=diff["target_hash"],
                     diff_hunk=diff_hunk,
+                    merged_date=datetime.fromisoformat(diff["merged_date"])
                 )
-                diff_data_list.append(diff_data)
-
-            return diff_data_list
+                yield diff_data
 
         except json.JSONDecodeError as e:
             raise json.JSONDecodeError(f"Invalid JSON format: {str(e)}", e.doc, e.pos)
@@ -41,12 +41,16 @@ class DiffDataHandler:
 
     @staticmethod
     def dump_to_json(data: list[DiffData], output_path: Path, owner: str, repo: str) -> None:
+        def custom_serializer(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()  # datetime を ISO 8601 形式の文字列に変換
+            raise TypeError(f"Type {type(obj)} not serializable")
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         json_data = {"repository": f"{owner}/{repo}", "diffs": [asdict(diff) for diff in data]}
         try:
             with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(json_data, f, indent=2, ensure_ascii=False)
+                json.dump(json_data, f, indent=2, ensure_ascii=False, default=custom_serializer)
             print(f"Saved diffs to {output_path}")
         except OSError as e:
             raise OSError(f"Failed to save file: {str(e)}")
