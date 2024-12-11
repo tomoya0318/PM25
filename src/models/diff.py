@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from dataclasses import dataclass
 
 
@@ -16,3 +18,4 @@ class DiffData:
     base_hash: str
     target_hash: str
     diff_hunk: DiffHunk
+    merged_date: datetime
