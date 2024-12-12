@@ -13,7 +13,6 @@ def _extract_string_literal(code: list, start: int, end: int) -> str:
 
 def abstract_code(diff_hunk: DiffHunk) -> DiffHunk:
     response: GumTreeResponse = run_GumTree(diff_hunk.condition, diff_hunk.consequent)
-    # print(response)
     abstraction_map = {}
     string_map = {}
     ID = IdentifierDict()
