@@ -117,6 +117,11 @@ class GitHubPRAnalyzer:
     def _parse_diff(self, diff: DiffIndex) -> list[ParsedDiff]:
         diff_data = []
 
+        def _append_non_empty_line(content:list[str], line: str):
+            line = line[1:].strip()
+            if line != "":
+                content.append(line)
+
         def _save_current_diff(file_name, condition, consequent) -> None:
             if condition and consequent:
                 diff_data.append(ParsedDiff(file_name, condition, consequent))
@@ -132,12 +137,12 @@ class GitHubPRAnalyzer:
                     line = lines[pos]
 
                     if line.startswith("-"):
-                        condition.append(line[1:].strip())
+                        _append_non_empty_line(condition, line)
                         pos += 1
 
                     elif line.startswith("+"):
                         while pos < len(lines) and lines[pos].startswith("+"):
-                            consequent.append(lines[pos][1:].strip())
+                            _append_non_empty_line(consequent, lines[pos])
                             pos += 1
                         _save_current_diff(file_name, condition, consequent)
                         condition, consequent = [], []
