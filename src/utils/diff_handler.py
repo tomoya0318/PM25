@@ -30,7 +30,9 @@ class DiffDataHandler:
                     base_hash=diff["base_hash"],
                     target_hash=diff["target_hash"],
                     diff_hunk=diff_hunk,
-                    merged_date=datetime.fromisoformat(diff["merged_date"])
+                    merged_date=datetime.fromisoformat(diff["merged_date"]),
+                    base_message=diff["base_message"],
+                    target_message=diff["target_message"],
                 )
                 yield diff_data
 
@@ -45,6 +47,7 @@ class DiffDataHandler:
             if isinstance(obj, datetime):
                 return obj.isoformat()  # datetime を ISO 8601 形式の文字列に変換
             raise TypeError(f"Type {type(obj)} not serializable")
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         json_data = {"repository": f"{owner}/{repo}", "diffs": [asdict(diff) for diff in data]}

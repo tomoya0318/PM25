@@ -19,3 +19,5 @@ class DiffData:
     target_hash: str
     diff_hunk: DiffHunk
     merged_date: datetime
+    base_message: str
+    target_message: str
