@@ -97,41 +97,73 @@ class GitHubPRAnalyzer:
             if pr["merged_at"] is not None:
                 yield pr["number"]
 
-    def get_pr_commit_hashes(self, owner: str, repo: str, pr_number: int) -> list:
+    def _fetch_pr_commit_hashes(self, owner: str, repo: str, pr_number: int) -> list[str]:
         """指定したプルリクエストの全てのコミットハッシュを取得する"""
         url = f"{self.base_url}/repos/{owner}/{repo}/pulls/{pr_number}/commits"
         commits = self._make_request(url)
         return [commit["sha"] for commit in commits]
 
+    def _fetch_commit_details(self, owner: str, repo: str, commit_sha: str) -> tuple[list[str], str]:
+        """指定したコミットハッシュで変更されたファイルの一覧とコミットメッセージを取得する
+        Returns:
+            tuple[list[str], str]: 変更ファイルの一覧, コミットメッセージの形式で返す
+        """
+        url = f"{self.base_url}/repos/{owner}/{repo}/commits/{commit_sha}"
+        commit_data = self._make_request(url)
+        changed_files = [file["filename"] for file in commit_data["files"]]
+        commit_messages = commit_data["commit"]["message"]
+        return changed_files, commit_messages
+
     def _parse_diff(self, diff: DiffIndex) -> list[ParsedDiff]:
         diff_data = []
+
+        def _save_current_diff(file_name, condition, consequent) -> None:
+            if condition and consequent:
+                diff_data.append(ParsedDiff(file_name, condition, consequent))
+
         for d in diff:
             try:
+                lines = d.diff.decode("utf-8").splitlines()
+                pos = 0
                 condition, consequent = [], []
-                for line in d.diff.decode("utf-8").splitlines():
+                file_name = d.a_path
+
+                while pos < len(lines):
+                    line = lines[pos]
+
                     if line.startswith("-"):
                         condition.append(line[1:].strip())
-                    elif line.startswith("+"):
-                        consequent.append(line[1:].strip())
+                        pos += 1
 
-                if not condition or not consequent:
-                    continue
-                diff_data.append(ParsedDiff(d.a_path, condition, consequent))
+                    elif line.startswith("+"):
+                        while pos < len(lines) and lines[pos].startswith("+"):
+                            consequent.append(lines[pos][1:].strip())
+                            pos += 1
+                        _save_current_diff(file_name, condition, consequent)
+                        condition, consequent = [], []
+
+                    else:
+                        _save_current_diff(file_name, condition, consequent)
+                        condition, consequent = [], []
+                        pos += 1
+
             except Exception as e:
                 print(f"Failed to generate diff: {str(e)}")
                 continue
 
         return diff_data
 
-    def _get_commit_diff(self, repo: Repo, base_commit_hash: str, target_commit_hash: str) -> list[ParsedDiff]:
+    def _get_commit_diff(
+        self, repo: Repo, base_commit_hash: str, target_commit_hash: str, file_name: str
+    ) -> list[ParsedDiff]:
         base_commit = repo.commit(base_commit_hash)
         target_commit = repo.commit(target_commit_hash)
 
         if not base_commit or not target_commit:
             raise GitCommandError(f"Could not access required commits")
 
-        diff: DiffIndex = base_commit.diff(target_commit, create_patch=True)
-        return self._parse_diff(diff)
+        diffs: DiffIndex = base_commit.diff(target_commit, create_patch=True, paths=file_name)
+        return self._parse_diff(diffs)
 
     def _fetch_pr_details(self, owner: str, repo: str, pr_number: int) -> dict:
         url = f"{self.base_url}/repos/{owner}/{repo}/pulls/{pr_number}"
@@ -147,27 +179,48 @@ class GitHubPRAnalyzer:
                 print(f"fetching PR #{pr_number} details...")
                 pr_details = self._fetch_pr_details(owner, repo, pr_number)
 
-                print(f"getting commit hashes from PR #{pr_number}")
-                commits = self.get_pr_commit_hashes(owner, repo, pr_number)
+                print(f"fetching commit hashes from PR #{pr_number}")
+                commit_hashes = self._fetch_pr_commit_hashes(owner, repo, pr_number)
                 # PRの最初と最後のコミットの差分取得（レビュワーの意思反映のため）
-                if len(commits) <= 1:
+                if len(commit_hashes) <= 1:
                     continue
 
-                print(f"getting diffs...")
-                diffs = self._get_commit_diff(repo_data, commits[0], commits[-1])
+                # PR内で変更があったファイルを取得
+                print(f"fetching changed file ...")
+                commit_messages = {}
+                file_change = {}
 
-                merged_date = datetime.strptime(pr_details["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
-                for diff in diffs:
-                    diff_data.append(
-                        DiffData(
-                            file_name=diff.file_name,
-                            pr_number=pr_number,
-                            base_hash=commits[0],
-                            target_hash=commits[-1],
-                            diff_hunk=DiffHunk(diff.condition, diff.consequent),
-                            merged_date=merged_date
+                for commit_sha in commit_hashes:
+                    changed_files, commit_message = analyzer._fetch_commit_details(owner, repo, commit_sha)
+                    commit_messages[commit_sha] = commit_message
+
+                    for changed_file in changed_files:
+                        if changed_file in file_change:
+                            file_change[changed_file].append(commit_sha)
+                        else:
+                            file_change[changed_file] = [commit_sha]
+
+                # 各ファイルに2つのコミットがないものを除外
+                file_change = {file: hashes for file, hashes in file_change.items() if len(hashes) >= 2}
+
+                # ファイルごとにdiffを取得
+                print(f"getting diffs...")
+                for file_name, hashes in file_change.items():
+                    diffs = self._get_commit_diff(repo_data, hashes[0], hashes[-1], file_name)
+                    merged_date = datetime.strptime(pr_details["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
+                    for diff in diffs:
+                        diff_data.append(
+                            DiffData(
+                                file_name=diff.file_name,
+                                pr_number=pr_number,
+                                base_hash=hashes[0],
+                                target_hash=hashes[-1],
+                                diff_hunk=DiffHunk(diff.condition, diff.consequent),
+                                merged_date=merged_date,
+                                base_message=commit_messages[hashes[0]],
+                                target_message=commit_messages[hashes[-1]],
+                            )
                         )
-                    )
 
                 # 成功したPRデータを保存する
                 output_path = path.RESOURCE / owner / f"{repo}.json"
@@ -197,7 +250,5 @@ if __name__ == "__main__":
     analyzer = GitHubPRAnalyzer(token, start_date, end_date)
     Dh = DiffDataHandler
 
-    # print(analyzer.get_pr_commit_hashes(owner, repo, 20643)[0])
-    # 全てのマージ済みPRのコミットハッシュを取得
+    repo1 = Repo(path.TMP / repo)
     analyzer.get_all_pr_commit_diff(owner, repo)
-    # Dh.dump_to_json(pr_commits, output_path, owner, repo)
