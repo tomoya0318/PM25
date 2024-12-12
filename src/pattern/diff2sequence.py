@@ -10,10 +10,9 @@ from constants import path
 from exception import TokenizationError
 from gumtree.extractor import extract_update_code_changes
 from gumtree.runner import GumTreeResponse, run_GumTree
-from models.diff import DiffData, DiffHunk
+from models.diff import DiffHunk
 from models.gumtree import UpdateChange
 from utils.diff_handler import DiffDataHandler
-from utils.file_processor import load_from_json
 from utils.lang_identifiyer import identify_lang_from_file
 
 
@@ -31,6 +30,9 @@ def extract_diff(file_path: Path) -> Generator[list[str], None, None]:
     for item in DH.load_from_json(file_path):
         try:
             language = identify_lang_from_file(item.file_name)
+            # Pythonファイルのみに対応
+            if language != "Python":
+                continue
         except ValueError as e:
             print(e)
             continue
@@ -39,11 +41,15 @@ def extract_diff(file_path: Path) -> Generator[list[str], None, None]:
             consequent = item.diff_hunk.consequent
 
             abstracted_diff = abstract_code(DiffHunk(condition, consequent))
-            if (
+
+            if len(abstracted_diff.condition) > 5 or len(abstracted_diff.consequent) > 5:
+                continue
+
+            elif (
                 len(abstracted_diff.condition) != len(abstracted_diff.consequent)
                 or len(abstracted_diff.condition) == 1
             ):
-                token_diff = compute_token_diff(language, DiffHunk(condition, consequent))
+                token_diff = _compute_token_diff(language, DiffHunk(condition, consequent))
                 yield token_diff
 
             else:
@@ -52,7 +58,7 @@ def extract_diff(file_path: Path) -> Generator[list[str], None, None]:
                     abstracted_diff.condition, abstracted_diff.consequent, response.actions
                 )
                 for change in changes:
-                    token_diff = compute_token_diff(language, DiffHunk([change.before], [change.after]))
+                    token_diff = _compute_token_diff(language, DiffHunk([change.before], [change.after]))
                     yield token_diff
 
 
@@ -67,7 +73,7 @@ def _tokenize_diff(language: str, code: list[str]):
         raise TokenizationError(f"Failed to tokenize code: {str(e)}") from e
 
 
-def compute_token_diff(language: str, diff_hunk: DiffHunk) -> list[str]:
+def _compute_token_diff(language: str, diff_hunk: DiffHunk) -> list[str]:
     """トークン化された2つのコード文字列の差分を計算する．"""
     tokenized_condition = _tokenize_diff(language, diff_hunk.condition)
     tokenized_consequent = _tokenize_diff(language, diff_hunk.consequent)
@@ -121,5 +127,6 @@ def merge_consecutive_tokens(diff: list) -> list:
 
 
 if __name__ == "__main__":
-    file_path = path.INTERMEDIATE / "sample" / "vscode#88117.json"
-    diffs = extract_diff(file_path)
+    file_path = path.RESOURCE / "numpy" / "numpy.json"
+    for diff in extract_diff(file_path):
+        print(f"diff: {diff}")
