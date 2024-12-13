@@ -16,15 +16,9 @@ from utils.diff_handler import DiffDataHandler
 from utils.lang_identifiyer import identify_lang_from_file
 
 
-def extract_diff(file_path: Path) -> Generator[list[str], None, None]:
-    """JSONファイルから，変更前と変更後のペアを抽出する
+def extract_diff(file_path: Path) -> Generator[tuple[str, DiffHunk], None, None]:
+    """JSONファイルから，変更前と変更後のペアを抽出する"""
 
-    Args:
-        file_path (str): データを含むJSONファイルへのパス
-
-    Returns:
-        list[(language: str, DiffHunk(condition: list, consequent: list))]
-    """
     DH = DiffDataHandler
 
     for item in DH.load_from_json(file_path):
@@ -41,7 +35,6 @@ def extract_diff(file_path: Path) -> Generator[list[str], None, None]:
             consequent = item.diff_hunk.consequent
 
             abstracted_diff = abstract_code(DiffHunk(condition, consequent))
-
             if len(abstracted_diff.condition) > 5 or len(abstracted_diff.consequent) > 5:
                 continue
 
@@ -49,8 +42,8 @@ def extract_diff(file_path: Path) -> Generator[list[str], None, None]:
                 len(abstracted_diff.condition) != len(abstracted_diff.consequent)
                 or len(abstracted_diff.condition) == 1
             ):
-                token_diff = _compute_token_diff(language, DiffHunk(condition, consequent))
-                yield token_diff
+                token_diff = DiffHunk(abstracted_diff.condition, abstracted_diff.consequent)
+                yield language, token_diff
 
             else:
                 response: GumTreeResponse = run_GumTree(abstracted_diff.condition, abstracted_diff.consequent)
@@ -58,8 +51,8 @@ def extract_diff(file_path: Path) -> Generator[list[str], None, None]:
                     abstracted_diff.condition, abstracted_diff.consequent, response.actions
                 )
                 for change in changes:
-                    token_diff = _compute_token_diff(language, DiffHunk([change.before], [change.after]))
-                    yield token_diff
+                    token_diff = DiffHunk([change.before], [change.after])
+                    yield language, token_diff
 
 
 def _tokenize_diff(language: str, code: list[str]):
@@ -73,7 +66,7 @@ def _tokenize_diff(language: str, code: list[str]):
         raise TokenizationError(f"Failed to tokenize code: {str(e)}") from e
 
 
-def _compute_token_diff(language: str, diff_hunk: DiffHunk) -> list[str]:
+def compute_token_diff(language: str, diff_hunk: DiffHunk) -> list[str]:
     """トークン化された2つのコード文字列の差分を計算する．"""
     tokenized_condition = _tokenize_diff(language, diff_hunk.condition)
     tokenized_consequent = _tokenize_diff(language, diff_hunk.consequent)

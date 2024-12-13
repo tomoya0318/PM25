@@ -1,4 +1,4 @@
-from tqdm import tqdm
+from pathlib import Path
 
 from constants import path
 from pattern.diff2sequence import extract_diff, compute_token_diff, merge_consecutive_tokens
@@ -60,46 +60,30 @@ class PrefixSpan:
         return new_projected_db
 
 
-def process_patch_pairs(patch_data):
+def process_patch_pairs(diff_path: Path, output_path: Path):
+
+    def _has_change_pattern(pattern: list[str]) -> bool:
+        return len(pattern) > 1 and any(token.startswith(("+", "-")) for token in pattern)
+
     sequences = []
-    for language, diff_hunk in tqdm(patch_data):
+    for language, diff_hunk in extract_diff(diff_path):
         token_diff = compute_token_diff(language, diff_hunk)
+        print(token_diff)
         sequences.append(token_diff)
 
     min_support = 2
     prefix_span = PrefixSpan(min_support)
     patterns = prefix_span.fit(sequences)
 
-    # 2つ以上のトークンで構成されたパターンのみをフィルタリング
-    # merged_patterns = [(merge_consecutive_tokens(pattern), support) for pattern, support in patterns]
-    # filtered_patterns = [(pattern, support) for pattern, support in merged_patterns if _has_change_pattern(pattern)]
     filtered_patterns = [(pattern, support) for pattern, support in patterns if _has_change_pattern(pattern)]
-    return filtered_patterns
 
-
-def _has_change_pattern(pattern: list[str]) -> bool:
-    is_change = False
-
-    if len(pattern) <= 1:
-        return is_change
-
-    for token in pattern:
-        if token.startswith("+") or token.startswith("-"):
-            is_change = True
-            break
-    return is_change
-
-
-def process_project(file_path, output_path):
-    patch_data = extract_diff(file_path)
-    patterns = process_patch_pairs(patch_data)
-    result = [{"pattern": pattern, "support": support} for pattern, support in patterns]
+    result = [{"pattern": pattern, "support": support} for pattern, support in filtered_patterns]
     dump_to_json(result, output_path)
-    return output_path
 
 
 if __name__ == "__main__":
-    project = f"{path.INTERMEDIATE}/sample/vscode#88117.json"
-    out_path = f"{path.RESULTS}/sample/vscode#88117.json"
-    process_project(project, out_path)
+    project = path.RESOURCE/"numpy"/"numpy.json"
+    out_path = path.RESULTS/"numpy"/"numpy.json"
+    process_patch_pairs(project, out_path)
     print("end")
+    print(out_path)
