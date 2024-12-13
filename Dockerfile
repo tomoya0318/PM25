@@ -19,3 +19,5 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 COPY . /work/
+
+ENV PYTHONPATH=/work/src:$PYTHONPATH
