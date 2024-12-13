@@ -2,7 +2,8 @@ FROM python:3.12.1
 
 WORKDIR /work
 
-COPY . /work
+COPY requirements.txt /work/
+COPY dist /work/dist
 
 RUN apt-get update &&\
     apt-get -y install locales &&\
@@ -15,7 +16,6 @@ ENV TERM xterm
 
 RUN pip install --upgrade pip
 
-RUN pip install poetry&&\
-    poetry config virtualenvs.create false
+RUN pip install -r requirements.txt
 
-RUN poetry install
+COPY . /work/
