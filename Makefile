@@ -17,7 +17,7 @@ up:
 	docker compose up -d
 
 exec:
-	docker exec -it pm25 sh
+	docker exec -it pm25 bash
 
 down:
 	docker compose down
