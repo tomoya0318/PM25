@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{ include = "*", from = "src" }]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.14"
 nltk = "^3.8.1"
 numpy = "^1.26.4"
 tokenizers = "^0.15.2"
@@ -23,6 +23,7 @@ matplotlib = "^3.9.0"
 gitpython = "^3.1.43"
 codetokenizer = {path = "/Users/tomoya-n/dev/PM25/dist/codetokenizer-0.1.0.tar.gz"}
 requests = "^2.32.3"
+astor = "^0.8.1"
 
 [build-system]
 requires = ["poetry-core"]

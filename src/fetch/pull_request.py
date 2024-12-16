@@ -1,17 +1,19 @@
-from git import DiffIndex, Repo, GitCommandError
+from datetime import datetime
 import os
 import time
-from datetime import datetime
 
 from dotenv import load_dotenv
 from dataclasses import dataclass
+from git import Repo, GitCommandError
 from typing import Generator
 import requests
 
 from constants import path
+from diff.file_diff import get_commit_diff
 from exception import GitHubAPIError
 from models.diff import DiffData, DiffHunk
 from utils.diff_handler import DiffDataHandler
+from utils.lang_identifiyer import identify_lang_from_file
 
 
 @dataclass
@@ -22,7 +24,7 @@ class ParsedDiff:
 
 
 class GitHubPRAnalyzer:
-    def __init__(self, token, start_date, end_date):
+    def __init__(self, token: str, start_date: datetime | None = None, end_date: datetime | None = None):
         self.headers = {"Authorization": f"token {token}"}
         self.base_url = "https://api.github.com"
         self.start_date = start_date
@@ -67,7 +69,7 @@ class GitHubPRAnalyzer:
         repo: str,
         state: str = "all",
     ) -> Generator[dict, None, None]:
-        page = 1
+        page = 17
         per_page = 100
         while True:
             url = f"{self.base_url}/repos/{owner}/{repo}/pulls"
@@ -114,62 +116,6 @@ class GitHubPRAnalyzer:
         commit_messages = commit_data["commit"]["message"]
         return changed_files, commit_messages
 
-    def _parse_diff(self, diff: DiffIndex) -> list[ParsedDiff]:
-        diff_data = []
-
-        def _append_non_empty_line(content:list[str], line: str):
-            line = line[1:].strip()
-            if line != "":
-                content.append(line)
-
-        def _save_current_diff(file_name, condition, consequent) -> None:
-            if condition and consequent:
-                diff_data.append(ParsedDiff(file_name, condition, consequent))
-
-        for d in diff:
-            try:
-                lines = d.diff.decode("utf-8").splitlines()
-                pos = 0
-                condition, consequent = [], []
-                file_name = d.a_path
-
-                while pos < len(lines):
-                    line = lines[pos]
-
-                    if line.startswith("-"):
-                        _append_non_empty_line(condition, line)
-                        pos += 1
-
-                    elif line.startswith("+"):
-                        while pos < len(lines) and lines[pos].startswith("+"):
-                            _append_non_empty_line(consequent, lines[pos])
-                            pos += 1
-                        _save_current_diff(file_name, condition, consequent)
-                        condition, consequent = [], []
-
-                    else:
-                        _save_current_diff(file_name, condition, consequent)
-                        condition, consequent = [], []
-                        pos += 1
-
-            except Exception as e:
-                print(f"Failed to generate diff: {str(e)}")
-                continue
-
-        return diff_data
-
-    def _get_commit_diff(
-        self, repo: Repo, base_commit_hash: str, target_commit_hash: str, file_name: str
-    ) -> list[ParsedDiff]:
-        base_commit = repo.commit(base_commit_hash)
-        target_commit = repo.commit(target_commit_hash)
-
-        if not base_commit or not target_commit:
-            raise GitCommandError(f"Could not access required commits")
-
-        diffs: DiffIndex = base_commit.diff(target_commit, create_patch=True, paths=file_name)
-        return self._parse_diff(diffs)
-
     def _fetch_pr_details(self, owner: str, repo: str, pr_number: int) -> dict:
         url = f"{self.base_url}/repos/{owner}/{repo}/pulls/{pr_number}"
         return self._make_request(url)
@@ -211,7 +157,11 @@ class GitHubPRAnalyzer:
                 # ファイルごとにdiffを取得
                 print(f"getting diffs...")
                 for file_name, hashes in file_change.items():
-                    diffs = self._get_commit_diff(repo_data, hashes[0], hashes[-1], file_name)
+                    if identify_lang_from_file(file_name) != "Python":
+                        continue
+                    diffs = get_commit_diff(repo_data, hashes[0], hashes[-1], file_name)
+                    if diffs == None:
+                        continue
                     merged_date = datetime.strptime(pr_details["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
                     for diff in diffs:
                         diff_data.append(
@@ -249,11 +199,12 @@ if __name__ == "__main__":
     output_path = path.RESOURCE / owner / f"{repo}.json"
     load_dotenv()
     token = os.getenv("GITHUB_TOKEN")
-    # 期間を指定
-    start_date = datetime(2021, 1, 1)
-    end_date = datetime(2024, 1, 1)
-    analyzer = GitHubPRAnalyzer(token, start_date, end_date)
-    Dh = DiffDataHandler
+    if token != None:
+        # 期間を指定
+        start_date = datetime(2021, 1, 1)
+        end_date = datetime(2024, 1, 1)
+        analyzer = GitHubPRAnalyzer(token, start_date, end_date)
+        Dh = DiffDataHandler
 
-    repo1 = Repo(path.TMP / repo)
-    analyzer.get_all_pr_commit_diff(owner, repo)
+        repo1 = Repo(path.TMP / repo)
+        analyzer.get_all_pr_commit_diff(owner, repo)
