@@ -1,3 +1,4 @@
+import base64
 import os
 import shutil
 import json
@@ -128,3 +129,11 @@ def count_elements_in_json(file_path):
     """
     data = load_from_json(file_path)
     return len(data)
+
+
+def base64_decode(content: str):
+    return base64.b64decode(content).decode("utf-8")
+
+
+def base64_encode(content: str):
+    return base64.b64encode(content.encode("utf-8")).decode("utf-8")
