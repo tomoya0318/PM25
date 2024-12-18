@@ -5,9 +5,8 @@ from constants import path
 from diff.comment_remover import remove_comments, remove_docstring
 
 
-
 def _parse_diff(diff: list) -> list[DiffHunk]:
-    diff_data: list[DiffHunk]  = []
+    diff_data: list[DiffHunk] = []
 
     def _append_non_empty_line(content: list[str], line: str):
         line = line[1:].strip()

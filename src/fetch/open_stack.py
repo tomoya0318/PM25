@@ -19,7 +19,9 @@ from utils.lang_identifiyer import identify_lang_from_file
 
 
 class OpenStackAnalyzer:
-    def __init__(self, user_name: str, token: str, start_date: datetime | None = None, end_date: datetime | None= None):
+    def __init__(
+        self, user_name: str, token: str, start_date: datetime | None = None, end_date: datetime | None = None
+    ):
         self.user_name = user_name
         self.token = token
         self.headers = self._build_headers(user_name, token)
@@ -41,7 +43,7 @@ class OpenStackAnalyzer:
             response.raise_for_status()
             time.sleep(1)
 
-            content_type = response.headers.get('Content-Type', '')
+            content_type = response.headers.get("Content-Type", "")
 
             if "application/json" in content_type:
                 # JSONレスポンス
@@ -56,7 +58,9 @@ class OpenStackAnalyzer:
         except Exception as e:
             raise e
 
-    def _fetch_changes(self, owner: str, repo: str, page: int, status: str = "merged") -> Generator[ChangeData, None, None]:
+    def _fetch_changes(
+        self, owner: str, repo: str, page: int, status: str = "merged"
+    ) -> Generator[ChangeData, None, None]:
         LIMIT = 100
         endpoint = f"/changes/"
 
@@ -77,11 +81,7 @@ class OpenStackAnalyzer:
             "q": query,
             "n": LIMIT,
             "start": (page - 1) * LIMIT,
-            "o": [
-                "ALL_REVISIONS",
-                "ALL_COMMITS",
-                "ALL_FILES"
-            ]
+            "o": ["ALL_REVISIONS", "ALL_COMMITS", "ALL_FILES"],
         }
 
         print(f"fetching from {endpoint}, page: {page}, query: {query}")
@@ -92,10 +92,10 @@ class OpenStackAnalyzer:
 
         if isinstance(changes, list):
             for change in changes:
-                merged_at = datetime.strptime(change["submitted"].split('.')[0], "%Y-%m-%d %H:%M:%S")
+                merged_at = datetime.strptime(change["submitted"].split(".")[0], "%Y-%m-%d %H:%M:%S")
                 sorted_revisions = sorted(
-                    change.get('revisions', {}).items(),
-                    key=lambda x: x[1].get('created', '9999-12-31 23:59:59.000000000')
+                    change.get("revisions", {}).items(),
+                    key=lambda x: x[1].get("created", "9999-12-31 23:59:59.000000000"),
                 )
                 # 各リビジョンの情報を作成
                 revisions: list[Revision] = []
@@ -104,19 +104,17 @@ class OpenStackAnalyzer:
                     changed_file = list(revision.get("files", {}).keys())
                     changed_files.update(changed_file)
                     revision = change["revisions"][revision_sha]
-                    revisions.append(Revision(
-                        hash=revision_sha,
-                        committer=revision["commit"]["committer"]["name"],
-                        subject=revision["commit"]["subject"],
-                        commit_message=revision["commit"]["message"],
-                        changed_files=changed_file
-                    ))
+                    revisions.append(
+                        Revision(
+                            hash=revision_sha,
+                            committer=revision["commit"]["committer"]["name"],
+                            subject=revision["commit"]["subject"],
+                            commit_message=revision["commit"]["message"],
+                            changed_files=changed_file,
+                        )
+                    )
 
-                yield ChangeData(
-                    change_id=change["change_id"],
-                    merged_at=merged_at,
-                    revisions=revisions
-                )
+                yield ChangeData(change_id=change["change_id"], merged_at=merged_at, revisions=revisions)
 
     def get_all_diff(self, owner: str, repo: str) -> None:
         page = 1
@@ -127,21 +125,21 @@ class OpenStackAnalyzer:
             for change in changes:
                 file_changes = defaultdict(list)
                 for revision in change.revisions:
-                    #ファイルごとのコミットハッシュを特定
+                    # ファイルごとのコミットハッシュを特定
                     for file in revision.changed_files:
                         file_changes[file].append(revision.hash)
 
                 # 各ファイルに2つのコミットがないものを除外
                 file_changes = {file: hashes for file, hashes in file_changes.items() if len(hashes) >= 2}
 
-                #ファイルごとのdiffを取得
+                # ファイルごとのdiffを取得
                 print(f"getting diffs...")
                 for file_name, hashes in file_changes.items():
                     try:
                         if identify_lang_from_file(file_name) != "Python":
                             continue
 
-                        #変更前と変更後のファイルを取得
+                        # 変更前と変更後のファイルを取得
                         base_file = self._fetch_changed_file(change.change_id, hashes[0], file_name)
                         target_file = self._fetch_changed_file(change.change_id, hashes[-1], file_name)
                         if base_file == None or target_file == None:
@@ -172,7 +170,7 @@ class OpenStackAnalyzer:
         except Exception as e:
             raise e
 
-    def _save_to_json(self, change: ChangeData, file_name: str, hashes: list[str], diffs:list[DiffHunk]) -> None:
+    def _save_to_json(self, change: ChangeData, file_name: str, hashes: list[str], diffs: list[DiffHunk]) -> None:
         diff_data = []
         Dh = DiffDataHandler
         # ハッシュをキーにした辞書を作成
@@ -192,19 +190,19 @@ class OpenStackAnalyzer:
                         hash=hashes[0],
                         committer=base_revision.committer,
                         subject=base_revision.subject,
-                        commit_message=base_revision.commit_message
+                        commit_message=base_revision.commit_message,
                     ),
                     target=MetaData(
                         hash=hashes[-1],
                         committer=target_revision.committer,
                         subject=target_revision.subject,
-                        commit_message=target_revision.commit_message
-                    )
+                        commit_message=target_revision.commit_message,
+                    ),
                 )
             )
 
-        #成功したPRデータを保存
-        output_path = path.RESOURCE/owner/f"{repo}.json"
+        # 成功したPRデータを保存
+        output_path = path.RESOURCE / owner / f"{repo}.json"
         if not output_path.parent.exists():
             output_path.parent.mkdir()
         Dh.dump_to_json(diff_data, output_path, owner, repo)
@@ -216,7 +214,7 @@ if __name__ == "__main__":
     load_dotenv()
     username = os.getenv("USER_NAME")
     token = os.getenv("OPENSTACK_TOKEN")
-    output_path = path.RESOURCE/owner/f"{repo}.json"
+    output_path = path.RESOURCE / owner / f"{repo}.json"
     if output_path.exists():
         output_path.unlink()
         print(f"{output_path}を削除しました")
