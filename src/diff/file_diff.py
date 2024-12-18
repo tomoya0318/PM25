@@ -1,38 +1,33 @@
 from difflib import Differ
 
-from dataclasses import dataclass
-from git import Repo, GitCommandError
-
+from models.diff import DiffHunk
+from constants import path
 from diff.comment_remover import remove_comments, remove_docstring
 
 
-@dataclass
-class ParsedDiff:
-    file_name: str
-    condition: list[str]
-    consequent: list[str]
 
-
-def _parse_diff(file_name: str, diff: list) -> list[ParsedDiff]:
-    diff_data: list[ParsedDiff] = []
+def _parse_diff(diff: list) -> list[DiffHunk]:
+    diff_data: list[DiffHunk]  = []
 
     def _append_non_empty_line(content: list[str], line: str):
         line = line[1:].strip()
         if line != "":
             content.append(line)
 
-    def _save_current_diff(file_name, condition, consequent) -> None:
+    def _save_current_diff(condition, consequent) -> None:
         if condition and consequent:
-            diff_data.append(ParsedDiff(file_name, condition, consequent))
+            diff_data.append(DiffHunk(condition, consequent))
 
     try:
         pos = 0
         condition, consequent = [], []
 
         while pos < len(diff):
-            line = diff[pos]
-
-            if line.startswith("-"):
+            line: str = diff[pos]
+            if line.startswith("?"):
+                pos += 1
+                continue
+            elif line.startswith("-"):
                 _append_non_empty_line(condition, line)
                 pos += 1
 
@@ -40,11 +35,11 @@ def _parse_diff(file_name: str, diff: list) -> list[ParsedDiff]:
                 while pos < len(diff) and diff[pos].startswith("+"):
                     _append_non_empty_line(consequent, diff[pos])
                     pos += 1
-                _save_current_diff(file_name, condition, consequent)
+                _save_current_diff(condition, consequent)
                 condition, consequent = [], []
 
             else:
-                _save_current_diff(file_name, condition, consequent)
+                _save_current_diff(condition, consequent)
                 condition, consequent = [], []
                 pos += 1
 
@@ -54,29 +49,7 @@ def _parse_diff(file_name: str, diff: list) -> list[ParsedDiff]:
         raise Exception(f"Failed to generate diff: {str(e)}")
 
 
-def _extract_file_from_commit(repo: Repo, commit_hash: str, target_file: str) -> str | None:
-    commit = repo.commit(commit_hash)
-    if not commit:
-        raise GitCommandError(f"Could not access required commits")
-    try:
-        blob = commit.tree / target_file
-    except KeyError as e:
-        print(KeyError(e))
-        return None
-    return blob.data_stream.read().decode("utf-8")
-
-
-def get_commit_diff(
-    repo: Repo, base_commit_hash: str, target_commit_hash: str, file_name: str
-) -> list[ParsedDiff] | None:
-
-    # Pythonファイルのみでdiffとる
-    base_file = _extract_file_from_commit(repo, base_commit_hash, file_name)
-    target_file = _extract_file_from_commit(repo, target_commit_hash, file_name)
-
-    if base_file == None or target_file == None:
-        return None
-
+def get_diff(base_file: str, target_file: str) -> list[DiffHunk]:
     # コメントの削除
     del_comment_base_file = remove_comments(base_file)
     del_comment_target_file = remove_comments(target_file)
@@ -87,4 +60,5 @@ def get_commit_diff(
 
     d = Differ()
     diff = list(d.compare(cleaned_base_file.splitlines(), cleaned_target_file.splitlines()))
-    return _parse_diff(file_name, diff)
+
+    return _parse_diff(diff)
