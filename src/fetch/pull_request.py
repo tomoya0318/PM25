@@ -9,7 +9,7 @@ from typing import Generator
 import requests
 
 from constants import path
-from diff.file_diff import get_commit_diff
+from diff.commit_diff import get_commit_diff
 from exception import GitHubAPIError
 from models.diff import DiffData, DiffHunk
 from utils.diff_handler import DiffDataHandler
