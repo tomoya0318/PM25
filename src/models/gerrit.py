@@ -28,6 +28,7 @@ class MetaData:
 @dataclass
 class ChangeData:
     change_id: str
+    branch: str
     merged_at: datetime
     revisions: list[Revision]
 
@@ -36,6 +37,7 @@ class ChangeData:
 @dataclass
 class DiffData:
     change_id: str
+    branch: str
     file_name: str
     merged_at: datetime
     diff_hunk: DiffHunk
