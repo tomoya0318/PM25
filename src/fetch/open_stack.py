@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import os
+from pathlib import Path
 import time
 
 from collections import defaultdict
@@ -92,10 +93,9 @@ class OpenStackAnalyzer:
 
         if isinstance(changes, list):
             for change in changes:
-                merged_at = datetime.strptime(change["submitted"].split(".")[0], "%Y-%m-%d %H:%M:%S")
                 sorted_revisions = sorted(
                     change.get("revisions", {}).items(),
-                    key=lambda x: x[1].get("created", "9999-12-31 23:59:59.000000000"),
+                    key=lambda x: x[1]["created"],
                 )
                 # 各リビジョンの情報を作成
                 revisions: list[Revision] = []
@@ -114,12 +114,17 @@ class OpenStackAnalyzer:
                         )
                     )
 
-                yield ChangeData(change_id=change["change_id"], merged_at=merged_at, revisions=revisions)
+                yield ChangeData(
+                    change_id=change["change_id"],
+                    branch=change["branch"],
+                    merged_at=datetime.strptime(change["submitted"].split(".")[0], "%Y-%m-%d %H:%M:%S"),
+                    revisions=revisions
+                )
 
     def get_all_diff(self, owner: str, repo: str) -> None:
         page = 1
         while True:
-            changes = self._fetch_changes(owner, repo, page)
+            changes = list(self._fetch_changes(owner, repo, page))  # ジェネレーターをリストに変換
             if not changes:
                 break
             for change in changes:
@@ -140,23 +145,24 @@ class OpenStackAnalyzer:
                             continue
 
                         # 変更前と変更後のファイルを取得
-                        base_file = self._fetch_changed_file(change.change_id, hashes[0], file_name)
-                        target_file = self._fetch_changed_file(change.change_id, hashes[-1], file_name)
+                        base_file = self._fetch_changed_file(owner, repo, change.branch, change.change_id, hashes[0], file_name)
+                        target_file = self._fetch_changed_file(owner, repo, change.branch, change.change_id, hashes[-1], file_name)
                         if base_file == None or target_file == None:
                             continue
 
                         diffs = get_diff(base_file, target_file)
 
                         self._save_to_json(change, file_name, hashes, diffs)
-                    except ValueError as e:
-                        print(e)
+                    except ValueError:
                         continue
 
             page += 1
 
-    def _fetch_changed_file(self, changed_id: str, revision_id: str, file_name: str) -> str | None:
+    def _fetch_changed_file(self, owner: str, repo: str, branch: str, changed_id: str, revision_id: str, file_name: str) -> str | None:
         file_id = quote(file_name, safe="")
-        endpoint = f"/changes/{changed_id}/revisions/{revision_id}/files/{file_id}/content"
+        project_id = quote(f"{owner}/{repo}", safe="")
+        branch_id = quote(branch, safe="")
+        endpoint = f"/changes/{project_id}~{branch_id}~{changed_id}/revisions/{revision_id}/files/{file_id}/content"
         try:
             response = self._get_request(endpoint)
             if isinstance(response, str):
@@ -164,6 +170,7 @@ class OpenStackAnalyzer:
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
                 print(f"404: {file_name}")
+                print(f"endpoint: {endpoint}")
                 return
             else:
                 raise
@@ -183,6 +190,7 @@ class OpenStackAnalyzer:
             diff_data.append(
                 DiffData(
                     change_id=change.change_id,
+                    branch=change.branch,
                     file_name=file_name,
                     merged_at=change.merged_at,
                     diff_hunk=DiffHunk(diff.condition, diff.consequent),
@@ -202,10 +210,31 @@ class OpenStackAnalyzer:
             )
 
         # 成功したPRデータを保存
-        output_path = path.RESOURCE / owner / f"{repo}.json"
+        output_path = self._create_save_path(owner, repo)
+
         if not output_path.parent.exists():
             output_path.parent.mkdir()
-        Dh.dump_to_json(diff_data, output_path, owner, repo)
+
+        Dh.dump_to_json(diff_data, output_path)
+
+    def _create_save_path(self, owner: str, repo: str) -> Path:
+        base_path = path.RESOURCE / owner
+
+        start_year = self.start_date.year if self.start_date else ""
+        end_year = self.end_date.year if self.end_date else ""
+
+        if start_year and end_year:
+            year_part = f"{start_year}to{end_year}"
+        elif start_year:
+            year_part = f"from{start_year}"
+        elif end_year:
+            year_part = f"to{end_year}"
+        else:
+            year_part = ""
+
+        # パスを構築
+        return base_path / year_part / f"{repo}.json"
+
 
 
 if __name__ == "__main__":
@@ -214,15 +243,13 @@ if __name__ == "__main__":
     load_dotenv()
     username = os.getenv("USER_NAME")
     token = os.getenv("OPENSTACK_TOKEN")
-    output_path = path.RESOURCE / owner / f"{repo}.json"
-    if output_path.exists():
-        output_path.unlink()
-        print(f"{output_path}を削除しました")
+    start_year = 2013
+    end_year = 2025
     if username != None and token != None:
-        # 期間を指定
-        start_date = datetime(2023, 1, 1)
-        end_date = datetime(2024, 1, 1)
-        OSA = OpenStackAnalyzer(username, token, start_date, end_date)
-        # OSA._fetch_changed_file("Ia600ceb22c5939117095593b97ed94735c8f953c", "cfc6f69cc2d513f09cc002a571554f9d8dd08e9f", "nova/virt/libvirt/utils.py")
-        # # ジェネレーターをリストに変換
-        OSA.get_all_diff(owner, repo)
+        for year in (range(start_year, end_year)):
+                # 期間を指定
+                start_date = datetime(year, 1, 1)
+                end_date = datetime(year + 1, 1, 1)
+                OSA = OpenStackAnalyzer(username, token, start_date, end_date)
+                # ジェネレーターをリストに変換
+                OSA.get_all_diff(owner, repo)
