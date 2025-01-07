@@ -18,6 +18,7 @@ RUN apt-get update && \
         python3-pip \
         wget \
         unzip \
+        procps \
         bash \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
