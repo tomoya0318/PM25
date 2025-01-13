@@ -112,45 +112,58 @@ def abstract_code(diff_hunk: DiffHunk) -> DiffHunk:
     for match in response.matches:
         if "identifier:" in match.src:
             #matchしたトークンの特定
-            src_token = match.src.split(":")[1].split("[")[0].strip()
-            dest_token = match.dest.split(":")[1].split("[")[0].strip()
+            try:
+                src_token = match.src.split(":")[1].split("[")[0].strip()
+                dest_token = match.dest.split(":")[1].split("[")[0].strip()
 
-            #一般的なメソッド名などではないか判定
-            if ID.should_preserve(src_token):
+                #一般的なメソッド名などではないか判定
+                if ID.should_preserve(src_token):
+                    continue
+
+                if "FUNCTION" in src_token or "FUCTION" in dest_token:
+                    continue
+
+                diff_hunk = DiffHunk(
+                    _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR),
+                    _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR)
+                )
+            except IndexError:
+                print(match)
                 continue
 
-            if "FUNCTION" in src_token or "FUCTION" in dest_token:
-                continue
-
-            diff_hunk = DiffHunk(
-                _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR),
-                _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR)
-            )
         if "integer:" in match.src:
-            src_token = match.src.split(":")[1].split("[")[0].strip()
-            dest_token = match.dest.split(":")[1].split("[")[0].strip()
+            try:
+                src_token = match.src.split(":")[1].split("[")[0].strip()
+                dest_token = match.dest.split(":")[1].split("[")[0].strip()
 
-            diff_hunk = DiffHunk(
-                _abstract_name(diff_hunk.condition, src_token, Abstraction.NUMBER),
-                _abstract_name(diff_hunk.consequent, dest_token, Abstraction.NUMBER)
-            )
+                diff_hunk = DiffHunk(
+                    _abstract_name(diff_hunk.condition, src_token, Abstraction.NUMBER),
+                    _abstract_name(diff_hunk.consequent, dest_token, Abstraction.NUMBER)
+                )
+            except IndexError:
+                print(match)
+                continue
 
         if match.src.startswith("string ["):
-            # 変更前の文字列の位置情報を取得
-            src_pos = match.src.split("[")[1].split("]")[0]
-            src_start, src_end = map(int, src_pos.split(","))
+            try:
+                # 変更前の文字列の位置情報を取得
+                src_pos = match.src.split("[")[1].split("]")[0]
+                src_start, src_end = map(int, src_pos.split(","))
 
-            # 変更後の文字列の位置情報を取得
-            dest_pos = match.dest.split("[")[1].split("]")[0]
-            dest_start, dest_end = map(int, dest_pos.split(","))
+                # 変更後の文字列の位置情報を取得
+                dest_pos = match.dest.split("[")[1].split("]")[0]
+                dest_start, dest_end = map(int, dest_pos.split(","))
 
-            src_token = _extract_string_literal(diff_hunk.condition, src_start, src_end)
-            dest_token = _extract_string_literal(diff_hunk.consequent, dest_start, dest_end)
+                src_token = _extract_string_literal(diff_hunk.condition, src_start, src_end)
+                dest_token = _extract_string_literal(diff_hunk.consequent, dest_start, dest_end)
 
-            diff_hunk = DiffHunk(
-                _abstract_name(diff_hunk.condition, src_token, Abstraction.STRING),
-                _abstract_name(diff_hunk.consequent, dest_token, Abstraction.STRING)
-            )
+                diff_hunk = DiffHunk(
+                    _abstract_name(diff_hunk.condition, src_token, Abstraction.STRING),
+                    _abstract_name(diff_hunk.consequent, dest_token, Abstraction.STRING)
+                )
+            except IndexError:
+                print(match)
+                continue
 
     return diff_hunk
 
