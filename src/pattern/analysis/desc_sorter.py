@@ -7,14 +7,12 @@ def sort_desc(data: dict):
 
 
 def main():
-    dir_path = f"{path.INTERMEDIATE}/pattern"
-    out_path = f"{dir_path}/desc"
-    projects = list_files_in_directory(f"{dir_path}/numpy")
-
-    for project in projects:
-        data = load_from_json(f"{dir_path}/numpy/{project}")
-        sorted_data = sort_desc(data)
-        dump_to_json(sorted_data, f"{out_path}/{project}")
+    owner = "openstack"
+    dir_path = path.RESULTS/owner/"2013to2014"/"nova.json"
+    out_path = path.RESULTS/owner/"2013to2014"/"desc_nova.json"
+    data = load_from_json(dir_path)
+    sorted_data = sort_desc(data)
+    dump_to_json(sorted_data, out_path)
 
 
 if __name__ == "__main__":

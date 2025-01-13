@@ -46,14 +46,11 @@ def run_GumTree(src_code: list, dest_code: list) -> GumTreeResponse:
     except subprocess.CalledProcessError as e:
         raise subprocess.SubprocessError(f"Docker command failed: {e.stderr}")
 
-    # finally:
-    #     remove_dir(TMP_DIR)
-
+    finally:
+        remove_dir(TMP_DIR)
 
 if __name__ == "__main__":
-    condition = ["ASSERT_EQ(expected, actual);", "ASSERT_EQ(expected2, actual2);", "ASSERT_EQ(expected3, actual3);"]
-
-    consequent = ["EXPECT_EQ(expected, actual);", "EXPECT_EQ(expected2, actual2);", "EXPECT_EQ(expected3, actual3);"]
-
+    condition = []
+    consequent = []
     response = run_GumTree(condition, consequent)
     print(response)

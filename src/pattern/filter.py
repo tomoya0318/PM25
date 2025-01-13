@@ -9,7 +9,7 @@ def calc_confidence(pattern: list[str], diff_path: Path) -> float:
     triggerable_count = 0
     actually_changed_count = 0
 
-    for _, diff_hunk in extract_diff(diff_path):
+    for _, _, diff_hunk in extract_diff(diff_path):
         if _is_trigger_sequence(pattern, diff_hunk.condition):
             triggerable_count += 1
             if _is_actually_chnage(pattern, diff_hunk.consequent):
@@ -89,8 +89,8 @@ def process_all_pattern(diff_path: Path, patterns_path: Path, output_path: Path)
 if __name__ == "__main__":
     owner = "numpy"
     repo = "numpy"
-    diff_path = path.RESOURCE/owner/f"{repo}.json"
-    patterns_path = path.RESULTS/owner/f"{repo}.json"
-    out_path = path.RESULTS/owner/f"filtered_{repo}.json"
+    diff_path = path.RESOURCE / owner / f"{repo}.json"
+    patterns_path = path.RESULTS / owner / f"{repo}.json"
+    out_path = path.RESULTS / owner / f"filtered_{repo}.json"
 
     process_all_pattern(diff_path, patterns_path, out_path)

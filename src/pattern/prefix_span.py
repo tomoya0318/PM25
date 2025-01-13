@@ -2,7 +2,7 @@ from pathlib import Path
 
 from constants import path
 from pattern.diff2sequence import extract_diff, compute_token_diff, merge_consecutive_tokens
-from utils.file_processor import dump_to_json
+from utils.file_processor import dump_to_json, load_from_json
 
 
 class PrefixSpan:
@@ -60,15 +60,15 @@ class PrefixSpan:
         return new_projected_db
 
 
+def _has_change_pattern(pattern: list[str]) -> bool:
+    return len(pattern) > 1 and any(token.startswith(("+", "-")) for token in pattern)
+
 def process_patch_pairs(diff_path: Path, output_path: Path):
 
-    def _has_change_pattern(pattern: list[str]) -> bool:
-        return len(pattern) > 1 and any(token.startswith(("+", "-")) for token in pattern)
 
     sequences = []
-    for language, diff_hunk in extract_diff(diff_path):
+    for _, language, diff_hunk in extract_diff(diff_path):
         token_diff = compute_token_diff(language, diff_hunk)
-        print(token_diff)
         sequences.append(token_diff)
 
     min_support = 2
@@ -82,8 +82,21 @@ def process_patch_pairs(diff_path: Path, output_path: Path):
 
 
 if __name__ == "__main__":
-    project = path.RESOURCE/"numpy"/"numpy.json"
-    out_path = path.RESULTS/"numpy"/"numpy.json"
-    process_patch_pairs(project, out_path)
+    owner = "openstack"
+    repos = ["nova"]
+    start_year = 2013
+    end_year = 2014
+    for repo in repos:
+        for year in range(start_year, end_year):
+            input_path = path.INTERMEDIATE / owner / f"{year}to{year + 1}" / f"{repo}.json"
+            output_path = path.RESULTS / owner / f"{year}to{year + 1}" / f"{repo}1.json"
+            print(f"year: {year}")
+            sequences = load_from_json(input_path)
+            min_support = 100
+            prefix_span = PrefixSpan(min_support)
+            patterns = prefix_span.fit(sequences)
+            filtered_patterns = [(pattern, support) for pattern, support in patterns if _has_change_pattern(pattern)]
+
+            result = [{"pattern": pattern, "support": support} for pattern, support in filtered_patterns]
+            dump_to_json(result, output_path)
     print("end")
-    print(out_path)

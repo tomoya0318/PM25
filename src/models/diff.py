@@ -1,11 +1,11 @@
 from datetime import datetime
 from dataclasses import dataclass
 
-from dataclasses_json import dataclass_json
+from dataclasses_json import dataclass_json, DataClassJsonMixin
 
 @dataclass_json
 @dataclass
-class DiffHunk:
+class DiffHunk(DataClassJsonMixin):
     """差分のhunkを表現するデータクラス"""
 
     condition: list[str]
