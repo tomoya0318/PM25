@@ -1,41 +1,139 @@
+from enum import Enum
+import tokenize
 import re
 
+from codetokenizer.tokenizer import TokeNizer
+
 from abstractor.loder import IdentifierDict
-from gumtree.runner import run_GumTree
+from exception import TokenizationError
+# from gumtree.runner import run_GumTree
+from gumtree.runner_in_docker import run_GumTree
 from models.diff import DiffHunk
 from models.gumtree import GumTreeResponse
 
 
-def _extract_string_literal(code: list, start: int, end: int) -> str:
-    joined_code = "".join(code)
-    return joined_code[start:end]
+class Abstraction(Enum):
+    VAR = 1
+    STRING = 2
+    NUMBER = 3
+
+
+def tokenize_code(code_line: str) -> list[str]:
+    LANGUAGE = "Python"
+    TN = TokeNizer(LANGUAGE)
+    try:
+        return TN.getPureTokens(code_line)
+    except tokenize.TokenError as e:
+        raise TokenizationError(f"Failed to tokenize code: {str(e)}") from e
+
+
+def replace_name(line: str, old_name: str, new_name: str) -> str:
+        """行内の関数名を置換"""
+        # 関数定義のパターン
+        pattern = re.escape(old_name)
+        return re.sub(pattern, f"{new_name}", line)
+
+
+def abstract_function_names(diff_hunk: DiffHunk) -> DiffHunk:
+    name_mapping = {}
+
+    def abstract_names(src_code: list[str]) -> list[str]:
+        abstracted_code = []
+        for line in src_code:
+            try:
+                tokens = tokenize_code(line)
+                if "def" not in tokens:
+                    abstracted_code.append(line)
+                    continue
+
+                func_index = tokens.index("def") + 1
+                if func_index >= len(tokens):
+                    continue
+
+                func_name = tokens[func_index]
+                if func_name not in name_mapping:
+                    name_mapping[func_name] = f"FUNCTION_{len(name_mapping) + 1}"
+
+                abstracted_code.append(
+                    replace_name(line, func_name, name_mapping[func_name])
+                )
+            except TokenizationError as e:
+                print(e)
+                continue
+
+        return abstracted_code
+
+    return DiffHunk(
+        abstract_names(diff_hunk.condition),
+        abstract_names(diff_hunk.consequent)
+    )
 
 
 def abstract_code(diff_hunk: DiffHunk) -> DiffHunk:
-    response: GumTreeResponse = run_GumTree(diff_hunk.condition, diff_hunk.consequent)
-    abstraction_map = {}
-    string_map = {}
+    name_mapping = {}
     ID = IdentifierDict()
+    var_count = str_count = num_count = 1
+
+    #関数名だけ先に抽象化
+    diff_hunk = abstract_function_names(diff_hunk)
+
+    #gumtreeで抽象構文木で分析
+    response: GumTreeResponse = run_GumTree(diff_hunk.condition, diff_hunk.consequent)
+
+    #抽象化を行う関数
+    def _abstract_name(src_code: list[str], target_token: str, match: Abstraction):
+        nonlocal name_mapping, var_count, str_count, num_count
+        abstracted_code = []
+        for line in src_code:
+            if target_token not in line:
+                abstracted_code.append(line)
+                continue
+            if target_token not in name_mapping:
+                if match == Abstraction.VAR:
+                    name_mapping[target_token] = f"VAR_{var_count}"
+                    var_count += 1
+                elif match == Abstraction.STRING:
+                    name_mapping[target_token] = f"STRING_{str_count}"
+                    str_count += 1
+                elif match == Abstraction.NUMBER:
+                    name_mapping[target_token] = f"NUBER_{num_count}"
+                    num_count += 1
+
+            abstracted_code.append(
+                replace_name(line, target_token, name_mapping[target_token])
+            )
+        return abstracted_code
+
+    #文字列のトークン特定用
+    def _extract_string_literal(src_code: list, start: int, end: int) -> str:
+        joined_code = "\n".join(src_code)
+        return joined_code[start:end]
 
     for match in response.matches:
         if "identifier:" in match.src:
-            # 識別子が変更前後で同じものだけ抽象化
-            src_id = match.src.split(":")[1].split("[")[0].strip()
-            dest_id = match.dest.split(":")[1].split("[")[0].strip()
+            #matchしたトークンの特定
+            src_token = match.src.split(":")[1].split("[")[0].strip()
+            dest_token = match.dest.split(":")[1].split("[")[0].strip()
 
-            if ID.should_preserve(src_id):
+            #一般的なメソッド名などではないか判定
+            if ID.should_preserve(src_token):
                 continue
 
-            if src_id == dest_id:
-                abstraction_map[src_id] = "IDENTIFIER"
+            if "FUNCTION" in src_token or "FUCTION" in dest_token:
                 continue
 
+            diff_hunk = DiffHunk(
+                _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR),
+                _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR)
+            )
         if "integer:" in match.src:
-            src_int = match.src.split(":")[1].split("[")[0].strip()
-            dest_int = match.dest.split(":")[1].split("[")[0].strip()
+            src_token = match.src.split(":")[1].split("[")[0].strip()
+            dest_token = match.dest.split(":")[1].split("[")[0].strip()
 
-            if src_int == dest_int:
-                abstraction_map[src_int] = "NUMBER"
+            diff_hunk = DiffHunk(
+                _abstract_name(diff_hunk.condition, src_token, Abstraction.NUMBER),
+                _abstract_name(diff_hunk.consequent, dest_token, Abstraction.NUMBER)
+            )
 
         if match.src.startswith("string ["):
             # 変更前の文字列の位置情報を取得
@@ -46,35 +144,20 @@ def abstract_code(diff_hunk: DiffHunk) -> DiffHunk:
             dest_pos = match.dest.split("[")[1].split("]")[0]
             dest_start, dest_end = map(int, dest_pos.split(","))
 
-            src_string = _extract_string_literal(diff_hunk.condition, src_start, src_end)
-            dest_string = _extract_string_literal(diff_hunk.consequent, dest_start, dest_end)
+            src_token = _extract_string_literal(diff_hunk.condition, src_start, src_end)
+            dest_token = _extract_string_literal(diff_hunk.consequent, dest_start, dest_end)
 
-            if src_string == dest_string:
-                string_map[src_string] = "STRING"
-                continue
+            diff_hunk = DiffHunk(
+                _abstract_name(diff_hunk.condition, src_token, Abstraction.STRING),
+                _abstract_name(diff_hunk.consequent, dest_token, Abstraction.STRING)
+            )
 
-    def abstract_line(line: str) -> str:
-        result = line
-
-        # 識別子と数値の抽象化
-        for id_name, replacement in abstraction_map.items():
-            pattern = r"\b" + re.escape(id_name) + r"\b"
-            result = re.sub(pattern, replacement, result)
-
-        # 文字列の抽象化
-        for string_literal, replacement in string_map.items():
-            pattern = re.escape(string_literal)
-            result = re.sub(pattern, replacement, result)
-
-        return result
-
-    abstracted_condition = [abstract_line(line) for line in diff_hunk.condition]
-    abstracted_consequent = [abstract_line(line) for line in diff_hunk.consequent]
-
-    return DiffHunk(abstracted_condition, abstracted_consequent)
+    return diff_hunk
 
 
 if __name__ == "__main__":
-    condition = ["a = list()", "a.append('tmp')"]
-    consequent = ["a = list()", "a.append('tmp')"]
-    print(abstract_code(DiffHunk(condition, consequent)))
+    # code = ["def function()", "print('a')"]
+    code = []
+    dest = ["def function()", "print('b')"]
+
+    print(abstract_code(DiffHunk(code, dest)))
