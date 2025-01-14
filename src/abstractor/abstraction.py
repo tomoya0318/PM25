@@ -125,7 +125,7 @@ def abstract_code(diff_hunk: DiffHunk) -> DiffHunk:
 
                 diff_hunk = DiffHunk(
                     _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR),
-                    _abstract_name(diff_hunk.condition, src_token, Abstraction.VAR)
+                    _abstract_name(diff_hunk.consequent, dest_token, Abstraction.VAR)
                 )
             except IndexError:
                 print(match)
@@ -169,8 +169,7 @@ def abstract_code(diff_hunk: DiffHunk) -> DiffHunk:
 
 
 if __name__ == "__main__":
-    # code = ["def function()", "print('a')"]
-    code = []
-    dest = ["def function()", "print('b')"]
+    condition = ['@_retry_on_deadlock']
+    consequent = ['@oslo_db_api.wrap_db_retry(max_retries=5, retry_on_deadlock=True)']
 
-    print(abstract_code(DiffHunk(code, dest)))
+    print(abstract_code(DiffHunk(condition, consequent)))
