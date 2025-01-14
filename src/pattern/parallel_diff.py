@@ -1,5 +1,6 @@
-from pathlib import Path
+import gc
 from joblib import Parallel, delayed
+from pathlib import Path
 
 from abstractor.abstraction import abstract_code
 from constants import path
@@ -65,10 +66,16 @@ def parallel_extract_and_token_diff(file_path: Path) -> list[list[str]]:
     # 平坦化: 二次元リストから要素を取り出して一次元にする
     diff_items: list[tuple[str, DiffHunk]] = [x for sublist in diff_item_list for x in sublist] # type: ignore
 
+    # ガベージコレクションでメモリ解放
+    gc.collect()
+
     token_diff_results = Parallel(n_jobs=-1, verbose=10)(
         delayed(compute_token_diff)(language, diff_hunk)
         for (language, diff_hunk) in diff_items # type: ignore
     )
+
+    # ガベージコレクションでメモリ解放
+    gc.collect()
 
     return token_diff_results # type: ignore
 
@@ -85,14 +92,10 @@ if __name__ == "__main__":
             input_path = path.RESOURCE / owner / f"{year}to{year + 1}" / f"{repo}.json"
             output_path = path.RESULTS / owner / f"{year}to{year + 1}" / f"{repo}.json"
 
-            print("getting diffs...")
+            print(f"getting diffs from {input_path}...")
             sequences = parallel_extract_and_token_diff(input_path)
             tmp_path = path.INTERMEDIATE/owner/f"{year}to{year + 1}"/f"{repo}.json"
-            try:
-                dump_to_json(sequences, tmp_path)
-            except:
-                print(sequences)
-
+            dump_to_json(sequences, tmp_path)
 
             print("create pattern")
             min_support = 2
