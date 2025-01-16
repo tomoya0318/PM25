@@ -97,7 +97,7 @@ def compute_token_diff(language: str, diff_hunk: DiffHunk) -> list[str]:
     return diff
 
 
-def merge_consecutive_tokens(diff: list) -> list:
+def merge_consecutive_tokens(diff: list[str]) -> list[str]:
     """連続するトークンを結合する．
 
     Args:
