@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from constants import path
-from pattern.diff2sequence import extract_diff, compute_token_diff, merge_consecutive_tokens
+from models.pattern import PatternWithSupport
+from pattern.diff2sequence import extract_diff, compute_token_diff
 from utils.file_processor import dump_to_json, load_from_json
 
 
@@ -10,9 +11,9 @@ class PrefixSpan:
         if not isinstance(min_support, int) or min_support < 1:
             raise ValueError("min_support must be a positive integer")
         self.min_support = min_support
-        self.frequent_patterns = []
+        self.frequent_patterns:list[PatternWithSupport] = []
 
-    def fit(self, sequences) -> list[tuple[list, int]]:
+    def fit(self, sequences) -> list[PatternWithSupport]:
         if not sequences:
             return []
         if not all(isinstance(seq, (list, tuple)) for seq in sequences):
@@ -20,7 +21,9 @@ class PrefixSpan:
 
         self.sequences = [tuple(seq) for seq in sequences]
         self.prefix_span([], self.sequences)
-        return sorted(self.frequent_patterns, key=lambda x: (-len(x[0]), -x[1]))
+        return sorted(
+            self.frequent_patterns, key=lambda x: (-len(x.pattern), -x.support)
+        )
 
     def prefix_span(self, prefix, projected_db):
         if not projected_db:
@@ -30,7 +33,7 @@ class PrefixSpan:
 
         for item, support in freq_patterns:
             new_prefix = prefix + [item]
-            self.frequent_patterns.append((new_prefix, support))
+            self.frequent_patterns.append(PatternWithSupport(new_prefix, support))
             new_projected_db = self.build_projected_db(projected_db, item)
             if new_projected_db:  # 空の投影DBをスキップ
                 self.prefix_span(new_prefix, new_projected_db)
@@ -73,11 +76,18 @@ def process_patch_pairs(diff_path: Path, output_path: Path):
 
     min_support = 2
     prefix_span = PrefixSpan(min_support)
-    patterns = prefix_span.fit(sequences)
+    pattern_data_list = prefix_span.fit(sequences)
 
-    filtered_patterns = [(pattern, support) for pattern, support in patterns if _has_change_pattern(pattern)]
+    filtered_pattern_data = [
+        PatternWithSupport(pattern_data.pattern, pattern_data.support)
+        for pattern_data in pattern_data_list
+        if _has_change_pattern(pattern_data.pattern)
+    ]
 
-    result = [{"pattern": pattern, "support": support} for pattern, support in filtered_patterns]
+    result = [
+        PatternWithSupport(pattern_data.pattern, pattern_data.support).to_dict
+        for pattern_data in filtered_pattern_data
+    ]
     dump_to_json(result, output_path)
 
 
@@ -94,9 +104,17 @@ if __name__ == "__main__":
             sequences = load_from_json(input_path)
             min_support = 100
             prefix_span = PrefixSpan(min_support)
-            patterns = prefix_span.fit(sequences)
-            filtered_patterns = [(pattern, support) for pattern, support in patterns if _has_change_pattern(pattern)]
+            pattern_data_list = prefix_span.fit(sequences)
+            filtered_pattern_data = [
+                PatternWithSupport(pattern_data.pattern, pattern_data.support)
+                for pattern_data in pattern_data_list
+                if _has_change_pattern(pattern_data.pattern)
+            ]
 
-            result = [{"pattern": pattern, "support": support} for pattern, support in filtered_patterns]
+            result = [
+                PatternWithSupport(pattern_data.pattern, pattern_data.support).to_dict
+                for pattern_data in filtered_pattern_data
+            ]
+
             dump_to_json(result, output_path)
     print("end")

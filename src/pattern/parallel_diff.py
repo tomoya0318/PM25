@@ -9,6 +9,7 @@ from gumtree.runner_in_docker import run_GumTree
 from models.diff import DiffHunk
 from models.gerrit import DiffData
 from models.gumtree import UpdateChange
+from models.pattern import PatternWithSupport
 from pattern.diff2sequence import compute_token_diff
 from pattern.prefix_span import PrefixSpan
 from utils.diff_handler import DiffDataHandler
@@ -53,25 +54,27 @@ def extract_diff_single(item: DiffData):
 
     return results
 
-
-def parallel_extract_and_token_diff(file_path: Path) -> list[list[str]]:
-    data_list = DiffDataHandler.load_from_json(file_path)
-
-    # diff_item_list の型を指定
+def parallel_extract_diff(data_list: list[DiffData]) -> list[tuple[str, DiffHunk]]:
     diff_item_list = list(
         Parallel(n_jobs=-1, verbose=10)(
-            delayed(extract_diff_single)(item) for item in data_list
+            delayed(extract_diff_single)(item)
+            for item in data_list
         )
     )
+
     # 平坦化: 二次元リストから要素を取り出して一次元にする
     diff_items: list[tuple[str, DiffHunk]] = [x for sublist in diff_item_list for x in sublist] # type: ignore
 
     # ガベージコレクションでメモリ解放
     gc.collect()
 
+    return diff_items
+
+
+def parallel_compute_diff(diff_data: list[tuple[str, DiffHunk]]) -> list[list[str]]:
     token_diff_results = Parallel(n_jobs=-1, verbose=10)(
         delayed(compute_token_diff)(language, diff_hunk)
-        for (language, diff_hunk) in diff_items # type: ignore
+        for (language, diff_hunk) in diff_data
     )
 
     # ガベージコレクションでメモリ解放
@@ -79,19 +82,30 @@ def parallel_extract_and_token_diff(file_path: Path) -> list[list[str]]:
 
     return token_diff_results # type: ignore
 
+
+def parallel_extract_and_token_diff(file_path: Path) -> list[list[str]]:
+    data_list = DiffDataHandler.load_from_json(file_path)
+
+    diff_data = parallel_extract_diff(data_list)
+    return parallel_compute_diff(diff_data)
+
+
 def _has_change_pattern(pattern: list[str]) -> bool:
         return len(pattern) > 1 and any(token.startswith(("+", "-")) for token in pattern)
 
 if __name__ == "__main__":
     owner = "openstack"
-    repos = ["neutron"]
+    repos = ["cinder", "glance", "keystone", "neutron", "swift"]
     start_year = 2013
-    end_year = 2014
+    end_year = 2025
     for repo in repos:
-        for year in range(start_year, end_year):
+        for year in reversed(range(start_year, end_year)):
             input_path = path.RESOURCE / owner / f"{year}to{year + 1}" / f"{repo}.json"
             output_path = path.RESULTS / owner / f"{year}to{year + 1}" / f"{repo}.json"
 
+            if not input_path.exists():
+                print(f"{input_path} is not exist")
+                continue
             print(f"getting diffs from {input_path}...")
             sequences = parallel_extract_and_token_diff(input_path)
             tmp_path = path.INTERMEDIATE/owner/f"{year}to{year + 1}"/f"{repo}.json"
@@ -100,8 +114,16 @@ if __name__ == "__main__":
             print("create pattern")
             min_support = 2
             prefix_span = PrefixSpan(min_support)
-            patterns = prefix_span.fit(sequences)
+            pattern_data_list = prefix_span.fit(sequences)
 
-            filtered_patterns = [(pattern, support) for pattern, support in patterns if _has_change_pattern(pattern)]
-            result = [{"pattern": pattern, "support": support} for pattern, support in filtered_patterns]
+            filtered_pattern_data = [
+                PatternWithSupport(pattern_data.pattern, pattern_data.support)
+                for pattern_data in pattern_data_list
+                if _has_change_pattern(pattern_data.pattern)
+            ]
+
+            result = [
+                PatternWithSupport(pattern_data.pattern, pattern_data.support).to_dict
+                for pattern_data in filtered_pattern_data
+            ]
             dump_to_json(result, output_path)
