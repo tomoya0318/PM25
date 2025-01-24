@@ -92,8 +92,6 @@ def compute_token_diff(language: str, diff_hunk: DiffHunk) -> list[str]:
             for token in tokenized_condition[i1:i2]:
                 diff.append(f"={token}")
 
-    if len(diff) > 15:
-        diff = []
     return diff
 
 
@@ -124,20 +122,6 @@ def merge_consecutive_tokens(diff: list[str]) -> list[str]:
 
 
 if __name__ == "__main__":
-    owner = "openstack"
-    repos = ["nova"]
-    start_year = 2013
-    end_year = 2014
-    for repo in repos:
-        for year in range(start_year, end_year):
-            result = []
-            input_path = path.RESOURCE / owner / f"{start_year}to{start_year + 1}" / f"{repo}.json"
-            output_path = path.INTERMEDIATE / "diff" / owner / f"{start_year}to{start_year + 1}" / f"{repo}.json"
-            print(input_path)
-            for merged_at, language, token_diff in extract_diff(input_path):
-                result.append({
-                    "token_diff": token_diff.to_dict(),
-                    "merged_at": merged_at.isoformat(),
-                    "language": language
-                })
-            dump_to_json(result, output_path)
+    condition = ['token = str(uuid.uuid4())']
+    consequent = ['token = uuidutils.generate_uuid()']
+    print(compute_token_diff("Python", DiffHunk(condition, consequent)))
