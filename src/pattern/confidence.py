@@ -48,7 +48,7 @@ def calc_confidence(pattern: list[str], diff_hunks: list[DiffHunk]) -> Confidenc
     return ConfidenceResult(pattern, round(actually_changed_count / triggerable_count, 2))
 
 
-def is_trigger_sequence(pattern: list[str], condition: list[str]) -> bool:
+def is_trigger_sequence(pattern: list[str], condition: list[str] | str) -> bool:
     """パターンが適用可能か判定"""
     trigger = [token.lstrip("-=") for token in pattern if token.startswith("-") or token.startswith("=")]
     if not trigger:
@@ -63,7 +63,7 @@ def is_trigger_sequence(pattern: list[str], condition: list[str]) -> bool:
     return True
 
 
-def is_actually_change(pattern: list[str], consequent: list[str]) -> bool:
+def is_actually_change(pattern: list[str], consequent: list[str] | str) -> bool:
     """パターンによる変更があるか判定"""
     actually_change = [token.lstrip("+=") for token in pattern if token.startswith("+") or token.startswith("=")]
     if not actually_change:
