@@ -25,6 +25,7 @@ codetokenizer = {path = "/Users/tomoya-n/dev/PM25/dist/codetokenizer-0.1.0.tar.g
 requests = "^2.32.3"
 astor = "^0.8.1"
 dataclasses-json = "^0.6.7"
+japanize-matplotlib = "^1.1.3"
 
 [build-system]
 requires = ["poetry-core"]
