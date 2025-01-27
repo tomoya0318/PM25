@@ -21,10 +21,10 @@ def extract_change_time(item: DiffData, pattern: list[str]) -> datetime | None:
     if not condition or not consequent:
         return None
 
-    abstracted_diff = abstract_code(DiffHunk(condition, consequent))
+    # abstracted_diff = abstract_code(DiffHunk(condition, consequent))
 
-    if is_trigger_sequence(pattern, abstracted_diff.condition):
-        if is_actually_change(pattern, abstracted_diff.consequent):
+    if is_trigger_sequence(pattern, condition):
+        if is_actually_change(pattern, consequent):
             return item.merged_at
     else:
         return None
@@ -74,7 +74,7 @@ def plot_change_times(change_times: list[datetime]) -> None:
     plt.tight_layout()
 
     # グラフを保存
-    plt.savefig(f'{owner}_{repo}_changes.png')
+    plt.savefig(f'{owner}_{repo}_actually_changes.png')
 
 
 if __name__ == "__main__":
@@ -83,12 +83,15 @@ if __name__ == "__main__":
     start_year = 2016
     end_year = 2025
     pattern = [
+        "-str",
+        "-(",
         "-uuid",
         "+uuidutils",
         "=.",
         "-uuid4",
         "+generate_uuid",
         "=()"
+        "-)"
     ]
 
     change_times = []
@@ -97,8 +100,8 @@ if __name__ == "__main__":
         change_times.extend(parallel_extract_change_time(diff_path, pattern))
 
     change_times.sort()
-    with open("tmp.txt", "w") as f:
-        f.write("\n".join([str(t) for t in change_times]))
+    # with open("tmp.txt", "w") as f:
+    #     f.write("\n".join([str(t) for t in change_times]))
 
     plot_change_times(change_times)
     send_discord_notification(f"Generated change plot")
