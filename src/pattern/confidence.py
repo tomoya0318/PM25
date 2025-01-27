@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-
-from dataclasses_json import dataclass_json, DataClassJsonMixin
-from joblib import Parallel, delayed
 from pathlib import Path
+
+from dataclasses_json import DataClassJsonMixin, dataclass_json
+from joblib import Parallel, delayed
 
 from models.diff import DiffHunk
 from pattern.parallel_diff import parallel_extract_diff

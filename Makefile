@@ -1,8 +1,5 @@
 .PHONY: test
 
-format:
-	poetry run black src/ test/
-
 lint:
 	poetry run flake8 src/
 

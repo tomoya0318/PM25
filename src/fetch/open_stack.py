@@ -1,14 +1,14 @@
-from datetime import datetime
 import json
 import os
-from pathlib import Path
 import time
-
 from collections import defaultdict
-from dotenv import load_dotenv
+from datetime import datetime
+from pathlib import Path
 from typing import Generator
 from urllib.parse import quote
+
 import requests
+from dotenv import load_dotenv
 
 from constants import path
 from diff.file_diff import get_diff
@@ -118,7 +118,7 @@ class OpenStackAnalyzer:
                     change_id=change["change_id"],
                     branch=change["branch"],
                     merged_at=datetime.strptime(change["submitted"].split(".")[0], "%Y-%m-%d %H:%M:%S"),
-                    revisions=revisions
+                    revisions=revisions,
                 )
 
     def get_all_diff(self, owner: str, repo: str) -> None:
@@ -145,8 +145,12 @@ class OpenStackAnalyzer:
                             continue
 
                         # 変更前と変更後のファイルを取得
-                        base_file = self._fetch_changed_file(owner, repo, change.branch, change.change_id, hashes[0], file_name)
-                        target_file = self._fetch_changed_file(owner, repo, change.branch, change.change_id, hashes[-1], file_name)
+                        base_file = self._fetch_changed_file(
+                            owner, repo, change.branch, change.change_id, hashes[0], file_name
+                        )
+                        target_file = self._fetch_changed_file(
+                            owner, repo, change.branch, change.change_id, hashes[-1], file_name
+                        )
                         if base_file == None or target_file == None:
                             continue
 
@@ -158,7 +162,9 @@ class OpenStackAnalyzer:
 
             page += 1
 
-    def _fetch_changed_file(self, owner: str, repo: str, branch: str, changed_id: str, revision_id: str, file_name: str) -> str | None:
+    def _fetch_changed_file(
+        self, owner: str, repo: str, branch: str, changed_id: str, revision_id: str, file_name: str
+    ) -> str | None:
         file_id = quote(file_name, safe="")
         project_id = quote(f"{owner}/{repo}", safe="")
         branch_id = quote(branch, safe="")
@@ -236,20 +242,21 @@ class OpenStackAnalyzer:
         return base_path / year_part / f"{repo}.json"
 
 
-
 if __name__ == "__main__":
     owner = "openstack"
-    repo = "nova"
+    repos = ["neutron", "cinder", "keystone", "swift", "glance"]
     load_dotenv()
     username = os.getenv("USER_NAME")
     token = os.getenv("OPENSTACK_TOKEN")
     start_year = 2013
     end_year = 2025
-    if username != None and token != None:
-        for year in (range(start_year, end_year)):
+    for year in reversed(range(start_year, end_year)):
+        for repo in repos:
+            if username != None and token != None:
                 # 期間を指定
                 start_date = datetime(year, 1, 1)
                 end_date = datetime(year + 1, 1, 1)
                 OSA = OpenStackAnalyzer(username, token, start_date, end_date)
                 # ジェネレーターをリストに変換
                 OSA.get_all_diff(owner, repo)
+    print("end")

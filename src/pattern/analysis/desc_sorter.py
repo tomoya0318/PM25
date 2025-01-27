@@ -8,8 +8,8 @@ def sort_desc(data: dict):
 
 def main():
     owner = "openstack"
-    dir_path = path.RESULTS/owner/"2013to2014"/"nova.json"
-    out_path = path.RESULTS/owner/"2013to2014"/"desc_nova.json"
+    dir_path = path.RESULTS / owner / "2013to2014" / "nova.json"
+    out_path = path.RESULTS / owner / "2013to2014" / "desc_nova.json"
     data = load_from_json(dir_path)
     sorted_data = sort_desc(data)
     dump_to_json(sorted_data, out_path)

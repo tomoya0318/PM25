@@ -1,22 +1,25 @@
-import difflib
+import os
 import tokenize
 from datetime import datetime
-
-from codetokenizer.tokenizer import TokeNizer
 from pathlib import Path
 from typing import Generator
 
+
+import difflib
+from codetokenizer.tokenizer import TokeNizer
+
 from abstractor.abstraction import abstract_code
-from constants import path
 from exception import TokenizationError
 from gumtree.extractor import extract_update_code_changes
-# from gumtree.runner import run_GumTree
-from gumtree.runner_in_docker import run_GumTree
 from models.diff import DiffHunk
 from models.gumtree import UpdateChange
 from utils.diff_handler import DiffDataHandler
 from utils.lang_identifiyer import identify_lang_from_file
-from utils.file_processor import dump_to_json
+
+if os.path.isfile("/.dockerenv"):
+    from gumtree.runner_in_docker import run_GumTree
+else:
+    from gumtree.runner import run_GumTree
 
 
 def extract_diff(file_path: Path) -> Generator[tuple[datetime, str, DiffHunk], None, None]:
@@ -122,6 +125,6 @@ def merge_consecutive_tokens(diff: list[str]) -> list[str]:
 
 
 if __name__ == "__main__":
-    condition = ['token = str(uuid.uuid4())']
-    consequent = ['token = uuidutils.generate_uuid()']
+    condition = ['a = a + b']
+    consequent = ['a += b']
     print(compute_token_diff("Python", DiffHunk(condition, consequent)))

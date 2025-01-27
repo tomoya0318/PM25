@@ -50,7 +50,7 @@ def run_GumTree(src_code: list, dest_code: list) -> GumTreeResponse:
         remove_dir(TMP_DIR)
 
 if __name__ == "__main__":
-    condition = []
-    consequent = []
+    condition = ['@exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())']
+    consequent = ["@wrap_exception()"]
     response = run_GumTree(condition, consequent)
     print(response)

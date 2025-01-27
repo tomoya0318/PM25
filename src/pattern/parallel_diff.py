@@ -15,6 +15,7 @@ from pattern.prefix_span import PrefixSpan
 from utils.diff_handler import DiffDataHandler
 from utils.lang_identifiyer import identify_lang_from_file
 from utils.file_processor import dump_to_json
+from utils.discord import send_discord_notification
 
 
 def extract_diff_single(item: DiffData):
@@ -96,7 +97,7 @@ def _has_change_pattern(pattern: list[str]) -> bool:
 if __name__ == "__main__":
     owner = "openstack"
     repos = ["cinder", "glance", "keystone", "neutron", "swift"]
-    start_year = 2013
+    start_year = 2016
     end_year = 2025
     for repo in repos:
         for year in reversed(range(start_year, end_year)):
@@ -112,8 +113,8 @@ if __name__ == "__main__":
             dump_to_json(sequences, tmp_path)
 
             print("create pattern")
-            min_support = 2
-            prefix_span = PrefixSpan(min_support)
+            min_support = 50
+            prefix_span = PrefixSpan(min_support, year)
             pattern_data_list = prefix_span.fit(sequences)
 
             filtered_pattern_data = [
@@ -123,7 +124,7 @@ if __name__ == "__main__":
             ]
 
             result = [
-                PatternWithSupport(pattern_data.pattern, pattern_data.support).to_dict
+                PatternWithSupport(pattern_data.pattern, pattern_data.support).to_dict()
                 for pattern_data in filtered_pattern_data
             ]
             dump_to_json(result, output_path)

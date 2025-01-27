@@ -1,6 +1,7 @@
-from joblib import Parallel, delayed
-from pathlib import Path
 from itertools import chain, groupby
+from pathlib import Path
+
+from joblib import Parallel, delayed
 
 from constants import path
 from models.pattern import PatternWithSupport
