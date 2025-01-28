@@ -1,8 +1,10 @@
 import base64
 import os
-import shutil
-import json
 import re
+import shutil
+from pathlib import Path
+
+import orjson
 
 
 def get_filename(file_path):
@@ -59,29 +61,29 @@ def remove_dir(dir_path):
         shutil.rmtree(dir_path)
 
 
-def load_from_json(file_path):
+def load_from_json(file_path: Path):
     """JSONファイルからデータを取得
 
     Args:
         file_path (str): JSONファイルへのパス
     """
     with open(file_path, "r") as f:
-        data = json.load(f)
+        data = orjson.loads(f.read())
 
     return data
 
 
-def dump_to_json(data, file_path):
+def dump_to_json(data, file_path: Path):
     """
     データをJSONファイルへ保存する関数。
 
     Args:
         data (any): 保存するデータ
-        file_path (str): JSONファイルへのパス
+        file_path (Path): JSONファイルへのパス
     """
     ensure_dir_exists(file_path)
     with open(file_path, "w") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+        f.write(orjson.dumps(data).decode("utf-8"))
 
 
 def list_files_in_directory(directory):
