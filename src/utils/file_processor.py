@@ -3,8 +3,12 @@ import os
 import re
 import shutil
 from pathlib import Path
+from typing import Generator
 
+import ijson
 import orjson
+
+from exception import JSONProcessingError
 
 
 def get_filename(file_path):
@@ -139,3 +143,12 @@ def base64_decode(content: str):
 
 def base64_encode(content: str):
     return base64.b64encode(content.encode("utf-8")).decode("utf-8")
+
+
+def stream_json_patterns(file_path: Path) -> Generator[dict, None, None]:
+    try:
+        with file_path.open("rb") as f:
+            for pattern in ijson.items(f, "item"):
+                yield pattern
+    except Exception as e:
+        raise JSONProcessingError(f"JSONストリーミングエラー: {str(e)}")

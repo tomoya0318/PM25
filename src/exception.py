@@ -8,3 +8,9 @@ class GitHubAPIError(Exception):
     """GitHub APIに関連するエラーを表すカスタム例外クラス"""
 
     pass
+
+
+class JSONProcessingError(Exception):
+    """JSONのストリーミング時のエラー"""
+
+    pass
