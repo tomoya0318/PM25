@@ -27,20 +27,15 @@ def parallel_count_token_length(file_path: Path, chunk_size: int = 1000, n_jobs:
     """並列処理によるトークン長カウント"""
     total_counts = defaultdict(int)
 
-    try:
-        items = stream_json_patterns(file_path)
-        results = Parallel(n_jobs=n_jobs, verbose=10)(
-            delayed(process_chunk)(list(itertools.islice(items, chunk_size)))
-            for _ in iter(lambda: list(itertools.islice(items, chunk_size)), [])
-        )
+    items = stream_json_patterns(file_path)
+    results = Parallel(n_jobs=n_jobs, verbose=10)(
+        delayed(process_chunk)(list(itertools.islice(items, chunk_size)))
+        for _ in iter(lambda: list(itertools.islice(items, chunk_size)), [])
+    )
 
-        for chunk_result in results:
-            for length, count in chunk_result.items():  # type: ignore
-                total_counts[length] += count
-
-    except JSONProcessingError as e:
-        print(f"処理中断: {str(e)}")
-        raise
+    for chunk_result in results:
+        for length, count in chunk_result.items():  # type: ignore
+            total_counts[length] += count
 
     return dict(total_counts)
 
