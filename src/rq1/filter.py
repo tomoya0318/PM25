@@ -1,42 +1,18 @@
-from itertools import chain
+from itertools import chain, islice
 from pathlib import Path
 
 from joblib import Parallel, delayed
-from tqdm import tqdm
 
 from constants import path
 from models.pattern import PatternWithSupport
 from pattern.merge import merge_pattern_results
-from utils.file_processor import load_from_json, dump_to_json
+from rq1.cut import iter_json_items
+from rq1.term import is_all_symbols, is_change_pattern, remove_subset_patterns
 from utils.discord import send_discord_notification
+from utils.file_processor import dump_to_json, load_from_json
 
 
-def is_subsequence(sub: list[str], seq: list[str]) -> bool:
-    """`sub` が `seq` の順序を保った部分列であるかを確認"""
-    it = iter(seq)
-    return all(token in it for token in sub)
-
-
-def remove_subset_patterns(patterns: list[PatternWithSupport]) -> list[PatternWithSupport]:
-    """順序を考慮して部分的に重複するパターンを削除"""
-    # パターンを長さ順に降順ソート
-    patterns.sort(key=lambda x: sum(len(token) for token in x.pattern), reverse=True)
-
-    unique_patterns = []
-    print("start remove")
-    for pattern in tqdm(patterns):
-        if not any(is_subsequence(pattern.pattern, other.pattern) for other in unique_patterns):
-            unique_patterns.append(PatternWithSupport(pattern.pattern, pattern.support))
-    return unique_patterns
-
-
-def is_long_pattern(pattern: list[str], length: int) -> bool:
-    if len(pattern) <= length:
-        return False
-    return True
-
-
-def single_process(base_path: Path, year: int) -> list[PatternWithSupport]:
+def single_pre_process(base_path: Path, year: int) -> list[PatternWithSupport]:
     input_path = base_path / f"{year}to{year + 1}" / "nova.json"
     output_path = base_path / f"{year}to{year + 1}" / "filtered_nova.json"
 
@@ -44,8 +20,10 @@ def single_process(base_path: Path, year: int) -> list[PatternWithSupport]:
     data = load_from_json(input_path)
     patterns = [PatternWithSupport.from_dict(item) for item in data]
 
+    # 変更パターン以外を削除
+    changed_pattern = [pattern for pattern in patterns if is_change_pattern(pattern.pattern)]
     # 部分パターンを削除
-    unique_patterns = remove_subset_patterns(patterns)
+    unique_patterns = remove_subset_patterns(changed_pattern)
 
     # 保存
     unique_data = [pattern.to_dict() for pattern in unique_patterns]
@@ -54,10 +32,25 @@ def single_process(base_path: Path, year: int) -> list[PatternWithSupport]:
     return unique_patterns
 
 
+def single_filter_process(input_path: Path):
+    count = 0
+    BATCH = 100000
+    result = []
+    while True:
+        print(count)
+        data = list(islice(iter_json_items(input_path), count * BATCH, (count + 1) * BATCH))
+        if not data:
+            break
+        result.extend([item for item in data if not is_all_symbols(item["pattern"])])
+        count += 1
+
+    return result
+
+
 def parallel_process(base_path, start_year, end_year):
     output_path = base_path / "all" / "merged_nova.json"
     results = Parallel(n_jobs=-1, verbose=10)(
-        delayed(single_process)(base_path, year) for year in range(start_year, end_year)
+        delayed(single_pre_process)(base_path, year) for year in range(start_year, end_year)
     )
     send_discord_notification("パターンのフィルタリングが完了しました。")
 
@@ -73,8 +66,20 @@ def parallel_process(base_path, start_year, end_year):
 
 
 if __name__ == "__main__":
-    start_year = 2017
-    end_year = 2025
+    base_path = path.RESULTS / "openstack" / "all"
+    input_path = base_path / "merged_15_nova_support10.json"
+    output_path = base_path / "tmp.json"
 
-    base_path = path.RESULTS / "openstack"
-    parallel_process(base_path, start_year, end_year)
+    try:
+        result = []
+        result = single_filter_process(input_path)
+        with open(base_path / "tmp.txt", "w") as f:
+            for item in result:
+                f.write(str(item) + "\n")
+        dump_to_json(result, output_path)
+        send_discord_notification("勝利")
+
+    except Exception as e:
+        # エラー内容を取得してDiscord通知
+        print(e)
+        send_discord_notification("敗北")
