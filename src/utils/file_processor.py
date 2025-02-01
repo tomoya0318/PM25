@@ -7,6 +7,7 @@ from typing import Generator
 
 import ijson
 import orjson
+from dotenv import load_dotenv
 
 from exception import JSONProcessingError
 
@@ -26,16 +27,17 @@ def get_filename(file_path):
     return filename_without_extension
 
 
-def ensure_dir_exists(file_path):
+def ensure_dir_exists(file_path: Path):
     """
     指定されたファイルパスのディレクトリが存在するか確認し、存在しない場合は作成
 
     Args:
         filepath (str): 確認および作成するディレクトリを含むファイルパス
     """
-    dir = os.path.dirname(file_path)
+    dir = file_path.parent
     if not os.path.exists(dir):
         os.makedirs(dir, exist_ok=True)
+        change_owner_recursive(dir)
         print(f"Directory created: {dir}")
 
 
@@ -87,7 +89,7 @@ def dump_to_json(data, file_path: Path):
     """
     ensure_dir_exists(file_path)
     with open(file_path, "w") as f:
-        f.write(orjson.dumps(data).decode("utf-8"))
+        f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode("utf-8"))
 
 
 def list_files_in_directory(directory):
@@ -152,3 +154,27 @@ def stream_json_patterns(file_path: Path) -> Generator[dict, None, None]:
                 yield pattern
     except Exception as e:
         raise JSONProcessingError(f"JSONストリーミングエラー: {str(e)}")
+
+
+def change_owner_recursive(path: Path):
+    """
+    指定したディレクトリおよびその中のすべてのファイル/ディレクトリの所有者とグループを変更する。
+    """
+    load_dotenv()
+    host_uid = os.getenv("HOST_UID")
+    host_gid = os.getenv("HOST_GID")
+    if host_uid and host_gid:
+        uid = int(host_uid)
+        gid = int(host_gid)
+
+        # 再帰的にchownを適用
+        for root, dirs, files in os.walk(path):
+            for name in dirs + files:
+                full_path = os.path.join(root, name)
+                os.chown(full_path, uid, gid)
+
+        # ルートディレクトリ自身のchown
+        os.chown(path, uid, gid)
+
+    else:
+        raise ValueError("host_uid or host_gid not defined")

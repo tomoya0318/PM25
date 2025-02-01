@@ -3,6 +3,9 @@ services:
     platform: linux/amd64
     build:
       context: .
+    environment:
+      - HOST_UID=${HOST_UID}
+      - HOST_GID=${HOST_GID}
     container_name: pm25
     tty: true
     volumes:
@@ -11,7 +14,7 @@ services:
         target: /work
       - type: volume
         source: packages
-        target: /usr/local/lib/python3.12/site-packages
+        target: /usr/local/lib/python3.11/site-packages
 
 volumes:
   packages:
