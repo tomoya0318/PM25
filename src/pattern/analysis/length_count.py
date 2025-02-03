@@ -5,7 +5,6 @@ from pathlib import Path
 from joblib import Parallel, delayed
 
 from constants import path
-from exception import JSONProcessingError
 from models.pattern import PatternWithSupport
 from utils.file_processor import stream_json_patterns
 
@@ -29,8 +28,7 @@ def parallel_count_token_length(file_path: Path, chunk_size: int = 1000, n_jobs:
 
     items = stream_json_patterns(file_path)
     results = Parallel(n_jobs=n_jobs, verbose=10)(
-        delayed(process_chunk)(list(itertools.islice(items, chunk_size)))
-        for _ in iter(lambda: list(itertools.islice(items, chunk_size)), [])
+        delayed(process_chunk)(chunk) for chunk in iter(lambda: list(itertools.islice(items, chunk_size)), []) if chunk
     )
 
     for chunk_result in results:
@@ -41,7 +39,7 @@ def parallel_count_token_length(file_path: Path, chunk_size: int = 1000, n_jobs:
 
 
 if __name__ == "__main__":
-    input_path = path.RESULTS / "openstack" / "all" / "merged_15_nova_support10.json"
+    input_path = path.RESULTS / "openstack_s10_t15" / "all" / "pre_filtered_nova.json"
     print("処理開始...")
     try:
         result = parallel_count_token_length(

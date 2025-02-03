@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from dataclasses_json import dataclass_json, DataClassJsonMixin, config
+from dataclasses_json import DataClassJsonMixin, config, dataclass_json
 
 from models.diff import DiffHunk
 
@@ -39,12 +39,7 @@ class DiffData(DataClassJsonMixin):
     change_id: str
     branch: str
     file_name: str
-    merged_at: datetime = field(
-        metadata=config(
-            encoder=datetime.isoformat,
-            decoder=datetime.fromisoformat
-        )
-    )
+    merged_at: datetime = field(metadata=config(encoder=datetime.isoformat, decoder=datetime.fromisoformat))
     diff_hunk: DiffHunk
     base: MetaData
     target: MetaData

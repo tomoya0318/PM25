@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from models.diff import DiffHunk
+from dataclasses_json import DataClassJsonMixin, dataclass_json
 
 
 @dataclass
@@ -18,8 +18,9 @@ class Action:
     label: str | None = None
 
 
+@dataclass_json
 @dataclass
-class GumTreeResponse:
+class GumTreeResponse(DataClassJsonMixin):
     matches: list[Match] = field(default_factory=list)
     actions: list[Action] = field(default_factory=list)
 

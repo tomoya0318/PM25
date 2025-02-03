@@ -9,7 +9,7 @@ class PrefixSpan:
             raise ValueError("min_support must be a positive integer")
         self.min_support = min_support
         self.start_year = start_year
-        self.frequent_patterns:list[PatternWithSupport] = []
+        self.frequent_patterns: list[PatternWithSupport] = []
 
     def fit(self, sequences) -> list[PatternWithSupport]:
         if not sequences:
@@ -40,7 +40,7 @@ class PrefixSpan:
         for sequence in sequences:
             if not sequence:
                 continue
-            if len(sequence) > 20:
+            if len(sequence) > 15:
                 too_long_sequences.append(sequence)
                 continue
             unique_items = set(sequence)
