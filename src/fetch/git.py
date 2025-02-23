@@ -20,6 +20,6 @@ def clone_project(url: str, repo: str, branch: str = "master"):
 
 def checkout_commit(repo: Repo, commit_hash: str):
     try:
-        repo.git.checkout(commit_hash)
+        repo.git.checkout(commit_hash, force=True)
     except GitCommandError as e:
         raise GitCommandError(f"Git Command failed: {str(e)}")
