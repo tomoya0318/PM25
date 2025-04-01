@@ -10,7 +10,6 @@ test_pt:
 	poetry run pytest -s
 
 up:
-	docker compose build
 	docker compose up -d
 
 exec:

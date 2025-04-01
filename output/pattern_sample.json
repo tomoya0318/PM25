@@ -1,0 +1,85 @@
+[
+    {
+        "pattern": [
+            "=VAR_1",
+            "==",
+            "-{",
+            "-}",
+            "+objects",
+            "+.",
+            "+ImageMeta",
+            "+.",
+            "+from_dict",
+            "+(",
+            "+self",
+            "+.",
+            "+test_VAR_1",
+            "+)"
+        ],
+        "support": 2504
+    },
+    {
+        "pattern": [
+            "=@",
+            "-exception",
+            "-.",
+            "=wrap_exception",
+            "=(",
+            "-notifier",
+            "-=",
+            "-notifier",
+            "-,",
+            "-publisher_id",
+            "-=",
+            "-publisher_id",
+            "-(",
+            "=)",
+            "-)"
+        ],
+        "support": 1067
+    },
+    {
+        "pattern": [
+            "=@",
+            "=wrap_instance_event",
+            "+(",
+            "+prefix",
+            "+=",
+            "+'compute'",
+            "+)"
+        ],
+        "support": 975
+    },
+    {
+        "pattern": [
+            "=VAR_2",
+            "==",
+            "=VAR_1",
+            "=.",
+            "-_create_fake_VAR_2",
+            "+_create_fake_VAR_2_obj",
+            "=(",
+            "=)"
+        ],
+        "support": 869
+    },
+    {
+        "pattern": [
+            "=@",
+            "-_retry_on_deadlock",
+            "+oslo_db_api",
+            "+.",
+            "+wrap_db_retry",
+            "+(",
+            "+max_retries",
+            "+=",
+            "+5",
+            "+,",
+            "+retry_on_deadlock",
+            "+=",
+            "+True",
+            "+)"
+        ],
+        "support": 756
+    }
+]
