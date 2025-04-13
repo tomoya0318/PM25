@@ -166,7 +166,7 @@ def abstract_code(diff_hunk: DiffHunk) -> DiffHunk:
 
 
 if __name__ == "__main__":
-    condition = ["cfg = drvr._get_guest_config(instance_ref, _fake_network_info(self,"]
-    consequent = ["token = uuidutils.generate_uuid()"]
+    condition = ["def func(a)"]
+    consequent = ["def func(a + b)"]
 
     print(abstract_code(DiffHunk(condition, consequent)))

@@ -61,3 +61,11 @@ def get_diff(base_file: str, target_file: str) -> list[DiffHunk]:
     diff = list(d.compare(cleaned_base_file.splitlines(), cleaned_target_file.splitlines()))
 
     return _parse_diff(diff)
+
+
+if __name__ == "__main__":
+    with open(path.TMP / "src.txt", "r") as f:
+        base = f.read()
+    with open(path.TMP / "dest.txt", "r") as f:
+        target = f.read()
+    print(get_diff(base, target))

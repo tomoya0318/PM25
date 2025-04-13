@@ -7,8 +7,8 @@ def sort_desc(data: dict):
 
 
 def main():
-    owner = "openstack"
-    dir_path = path.RESULTS / owner / "all" / "filtered_nova.json"
+    owner = "openstack_s10_t15"
+    dir_path = path.RESULTS / owner / "all" / "merged_all_nova_2013to2025.json"
     data = load_from_json(dir_path)
     sorted_data = sort_desc(data)
     dump_to_json(sorted_data, dir_path)

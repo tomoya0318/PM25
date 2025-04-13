@@ -23,7 +23,7 @@ def split_pattern(pattern: list[str]):
     return trigger, actually_change
 
 
-def pattern_to_regex(pattern: list[str]):
+def pattern_to_regex(pattern: list[str])-> re.Pattern[str]:
     regex = ""
     for token in pattern:
         if "VAR" in token or "FUNCTION" in token:
