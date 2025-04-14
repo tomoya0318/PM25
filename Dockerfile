@@ -12,14 +12,14 @@ FROM debian:bookworm-slim
 # -------------------------------------------------------------
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        openjdk-17-jre \
-        python3 \
-        python3-venv \
-        python3-pip \
-        wget \
-        unzip \
-        procps \
-        bash \
+    openjdk-17-jre \
+    python3 \
+    python3-venv \
+    python3-pip \
+    wget \
+    unzip \
+    procps \
+    bash \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
