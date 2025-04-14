@@ -1,61 +1,78 @@
 # -------------------------------------------------------------
-# 1. ベースイメージ: Debian Bookworm Slim
+# 1. ベースイメージ: Python 3.11 Slim
 # -------------------------------------------------------------
-FROM debian:bookworm-slim
+FROM python:3.12-slim-bookworm AS base
+
+# タイムゾーン設定
+ENV TZ=Asia/Tokyo
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # -------------------------------------------------------------
-# 2. 必要パッケージをインストール
-#    - openjdk-17-jre: Java17 実行環境 (JRE)
-#    - python3, python3-venv, python3-pip: Python3 + venv + Pip
-#    - wget, unzip: GumTree ダウンロード・解凍
-#    - bash: 対話シェル (必要に応じて)
+# 2. ビルドステージ: 依存関係のインストール
 # -------------------------------------------------------------
+FROM base AS builder
+
+# 必要なパッケージをインストール
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     openjdk-17-jre \
-    python3 \
-    python3-venv \
-    python3-pip \
     wget \
     unzip \
     procps \
-    bash \
+    gosu \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# -------------------------------------------------------------
-# 3. GumTree のインストール
-# -------------------------------------------------------------
+# GumTree のインストール
 WORKDIR /opt
 RUN wget "https://github.com/GumTreeDiff/gumtree/releases/download/v4.0.0-beta2/gumtree-4.0.0-beta2.zip" \
     && unzip "gumtree-4.0.0-beta2.zip" \
     && mv "gumtree-4.0.0-beta2" "gumtree" \
     && rm "gumtree-4.0.0-beta2.zip"
 
-# GumTree コマンド (gumtree, gtdiff) を PATH に追加
-ENV PATH="$PATH:/opt/gumtree/bin"
-
-# -------------------------------------------------------------
-# 4. Python 仮想環境の作成
-# -------------------------------------------------------------
-# venv を /venv に作成しておき、そこを PATH に追加
-RUN python3 -m venv /venv
-ENV PATH="/venv/bin:$PATH"
-ENV PYTHONPATH=/work/src:$PYTHONPATH
-
-# -------------------------------------------------------------
-# 5. Python パッケージをインストール
-#    - requirements.txt があるならコピーしてインストール
-# -------------------------------------------------------------
+# requirements.txtのみを先にコピーしてキャッシュ活用
 WORKDIR /work
-COPY requirements.txt /work/requirements.txt
-COPY dist /work/dist
-
-# 仮想環境上で pip install
-RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt ./
+COPY dist ./dist/
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # -------------------------------------------------------------
-# 6. ソースコードをコピー（必要に応じて）
+# 3. 実行ステージ: 最終イメージの作成
 # -------------------------------------------------------------
+FROM base
+
+# 実行に必要なパッケージのみインストール
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    openjdk-17-jre \
+    procps \
+    gosu \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# セキュリティ: 非rootユーザーの作成
+RUN groupadd -r appuser && useradd -r -g appuser -m appuser
+
+# ビルドステージから必要なファイルをコピー
+COPY --from=builder /opt/gumtree /opt/gumtree
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+
+# エントリーポイントスクリプトのコピー
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# 環境変数設定 - ビルド時に固定される設定
+ENV PATH="/opt/gumtree/bin:$PATH"
+ENV PYTHONPATH=/work/src
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# 作業ディレクトリ設定
+WORKDIR /work
+
+# アプリケーションコードをコピー
 COPY . /work/
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["bash"]

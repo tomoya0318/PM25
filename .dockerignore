@@ -1,0 +1,9 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+.venv
+.DS_Store
+.pytest_cache
+gumtree
+output
