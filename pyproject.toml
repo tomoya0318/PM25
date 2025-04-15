@@ -2,7 +2,10 @@
 authors = ["tomoya-n <s266227@wakayama-u.ac.jp>"]
 description = ""
 name = "pm25"
-packages = [{include = "*", from = "src"}]
+packages = [
+  {include = "src"},
+  {include = "*", from = "src"},
+]
 readme = "README.md"
 version = "0.1.0"
 
@@ -24,9 +27,9 @@ requests = "^2.32.3"
 seaborn = "^0.13.2"
 setuptools = "^75.8.0"
 sklearn-model = "^0.0.6"
+sqlmodel = "^0.0.24"
 tokenizers = "^0.15.2"
 tqdm = "^4.66.4"
-sqlmodel = "^0.0.24"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
