@@ -15,6 +15,9 @@ services:
       - type: volume
         source: packages
         target: /usr/local/lib/python3.12/site-packages
+      - type: volume
+        source: pm25_data
+        target: /work/data/database
     tty: true
     healthcheck:
       test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
@@ -26,3 +29,5 @@ services:
 volumes:
   packages:
     name: pm25-python-packages
+  pm25_data:
+    name: pm25-data
